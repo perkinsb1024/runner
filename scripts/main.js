@@ -14,7 +14,10 @@ require([
     Player,
     level1,
     level2
-) {    
+) {
+    var STARTING_TELEPODS = 2;
+    var STARTING_EXTRA_LIVES = 2;
+    
     var scope = this;
     var url = document.location.href;
     var canvas = $('#runner')[0];
@@ -22,6 +25,7 @@ require([
     var $playPauseGame = $('.playPauseGame');
     var $progressFill = $('.progressBar .fill');
     var $extraLives = $('.extraLives');
+    var $telepods = $('.telepods');
     var eventEmitter = new EventEmitter2();
     var level = level1;
     var game;
@@ -33,6 +37,7 @@ require([
         canvas: canvas,
         $progressBar: $progressFill,
         $extraLives: $extraLives,
+        $telepods: $telepods,
         eventEmitter: eventEmitter,
         paused: false,
         duration: 100 * 1000,
@@ -51,8 +56,12 @@ require([
             x: 1,
             y: 7
         },
-        type: Player.types.HUMAN
+        type: Player.types.HUMAN,
+        numExtraLives: STARTING_EXTRA_LIVES,
+        numTelepods: STARTING_TELEPODS
     });
+    game.updateTelepods(STARTING_TELEPODS);
+    game.updateExtraLives(STARTING_EXTRA_LIVES);
     
     eventEmitter.on('renderRequest', function() {
         game.render();

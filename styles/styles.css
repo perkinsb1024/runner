@@ -53,6 +53,8 @@ body {
     display: inline-block;
     vertical-align: middle;
     margin: 5px;
+    width: 70px;
+    height: 18px;
 }
 
 .extraLives .life {
@@ -61,6 +63,21 @@ body {
     width: 10px;
     height: 18px;
     background-image: url('../images/src/extra_life_yellow.png');
+}
+
+.telepods {
+    display: inline-block;
+    vertical-align: middle;
+    margin: 5px;
+    width: 80px
+}
+
+.telepods .telepod {
+    display: inline-block;
+    margin: 0 2px;
+    width: 11px;
+    height: 11px;
+    background-image: url('../images/src/telepod.png');
 }
 
 .logo {

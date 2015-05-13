@@ -1,16 +1,20 @@
 define([
     'jquery',
     'mout/array/forEach',
+    'mout/object/forOwn',
     'utilities/game-board',
     'utilities/game-tile',
     'utilities/audio-manager',
+    'utilities/addon',
     'utilities/player'
 ], function (
     $,
     forEach,
+    forOwn,
     GameBoard,
     GameTile,
     AudioManager,
+    Addon,
     Player
 ) {
     var tileSize = GameTile.getTileSize();
@@ -18,6 +22,9 @@ define([
     var tileHeight = tileSize.height;
     
     var AUTO_PLAY_MUSIC = false;
+    var MAX_ACTIVE_TELEPODS = 1;
+    var MAX_TELEPODS = 5;
+    var TELEPOD_PROBABILITY_DECAY = 1.6;
        
     /**
      * Creates a new GameState
@@ -29,6 +36,7 @@ define([
         var canvas = opts.canvas;// || throw new Error("No `canvas` provided!");
         var $progressBar = opts.$progressBar;
         var $extraLives = opts.$extraLives;
+        var $telepods = opts.$telepods;
         var eventEmitter = opts.eventEmitter;// || throw new Error("No `eventEmitter` provided!");
         var level = opts.level;// || throw new Error("No `level` provided!");
         var paused = opts.paused || false;
@@ -46,15 +54,21 @@ define([
         this._canvas = canvas;
         this._$progressBar = $progressBar;
         this._$extraLives = $extraLives;
+        this._$telepods = $telepods;
         this._eventEmitter = eventEmitter;
         this._context = context;
         this._board = new GameBoard(context, level, cols, rows);
         this._paused = paused;
+        this._gameOver = false;
         this._rows = rows;
         this._cols = cols;
         this._players = players;
         this._duration = duration;
         this._remainingTime = duration;
+        this._telepodProbability = 0.96;
+        this._numActiveTelepods = 0;
+        this._gameOverImage = new Image();
+        this._gameOverImage.src = ('images/src/game_over.png');
         this._backgroundMusic = music;
         music.loop = true;
         music.volume = 0.6;
@@ -70,16 +84,23 @@ define([
             scope._processMove.call(scope, event);
         });
         
-        setInterval(function() {
-            if(!scope._paused) {
-                scope.decrementTime.call(scope, 1000)
-            }
-        }, 1000);
+        this.enableTimer();
     }
     
     /**
      * Render the game
      */
+    GameState.prototype.enableTimer = function enableTimer() {
+        var scope = this;
+        this._interval = setInterval(function() {
+            scope.decrementTime.call(scope, 1000)
+        }, 1000);
+    };
+    
+    GameState.prototype.disableTimer = function disableTimer() {
+        clearInterval(this._interval);
+    };
+    
     GameState.prototype.render = function render() {
         var scope = this;
         this._board.render();
@@ -89,16 +110,20 @@ define([
     };
     
     GameState.prototype.pause = function pause() {
+        this.disableTimer();
         this._musicWasPlaying = this.isMusicPlaying();
         this.pauseMusic();
         this._paused = true;
     };
     
     GameState.prototype.resume = function resume() {
-        this._paused = false;
-        if(this._musicWasPlaying) {
-            this.playMusic();
-            delete this._musicWasPlaying;
+        if(!this._gameOver) {
+            this.enableTimer();
+            this._paused = false;
+            if(this._musicWasPlaying) {
+                this.playMusic();
+                delete this._musicWasPlaying;
+            }
         }
     };
     
@@ -135,6 +160,20 @@ define([
         }
     };
     
+    GameState.prototype.updateTelepods = function updateTelepod(numTelepods) {
+        this._$telepods.html('');
+        for(var i = 0; i < numTelepods; i++) {
+            this._$telepods.append($('<div class="telepod">'));
+        }
+    };
+    
+    GameState.prototype.updateExtraLives = function updateExtraLives(numExtraLives) {
+        this._$extraLives.html('');
+        for(var i = 0; i < numExtraLives; i++) {
+            this._$extraLives.append($('<div class="life">'));
+        }
+    };
+    
     GameState.prototype.decrementTime = function decrementTime(amount) {
         if(typeof amount === 'undefined') {
             amount = 1000;
@@ -152,6 +191,22 @@ define([
         percent = (100 * this._remainingTime / this._duration);
         $progressBar.css('width', percent + '%');
         $progressBar.toggleClass('low', percent <= 10).toggleClass('medium', percent > 10 && percent <= 40).toggleClass('high', percent > 40);
+        
+        if(this._remainingTime <= 0) {
+            this.endGame();
+        }
+    };
+    
+    GameState.prototype.endGame = function endGame() { 
+        var image = this._gameOverImage;       
+        this._gameOver = true;
+        this.pause();
+        
+        this._context.drawImage(
+            image,
+            this._canvas.width / 2 - image.width / 2,
+            this._canvas.height / 2 - image.height / 2
+        );
     };
     
     /**
@@ -196,12 +251,59 @@ define([
         }
     };
     
+    GameState.prototype._getNewTelepod = function _getNewTelepod(player) {
+        var numTelepods = player.getNumTelepods();
+        if(player.getType() === Player.types.HUMAN) {
+            if(numTelepods < MAX_TELEPODS && this._telepodProbability > Math.random()) {
+                this._telepodProbability /= TELEPOD_PROBABILITY_DECAY;
+                ++numTelepods;
+                player.setNumTelepods(numTelepods);
+                this.updateTelepods(numTelepods);
+            }
+        }
+    };
+    
+    GameState.prototype._handleTelepod = function _handleTelepod(player, tile, telepod) {
+        var position = player.getPosition();
+        var board = this._board;
+
+        player.setPosition(position);
+        if(player.getType() === Player.types.OPPONENT) {
+            tile.removeAddon(telepod);
+            delete telepod;
+            --(this._numActiveTelepods);
+            position.x = Math.floor(Math.random() * board.getCols());
+            position.y = Math.floor(Math.random() * board.getRows());
+            player.setPosition(position);
+        };
+    };
+    
+    GameState.prototype._handleAddons = function _handleAddons(player, tile, position) {
+        var scope = this;
+        var addons = tile.getAddons();
+        forEach(addons, function(addon) {
+            var type = addon.getType();
+            switch(type) {
+                case Addon.typeIds.MARBLE:
+                    break;
+                case Addon.typeIds.TELEPOD:
+                    scope._handleTelepod(player, tile, addon)
+                    break;
+                case Addon.typeIds.NEUTRINO_CAN:
+                    break;
+                case Addon.typeIds.DOOR:
+                    break;
+            }
+        });
+    };
+    
     GameState.prototype._handleSwitch = function _handleSwitch(player, tile, position) {
         // todo: Handle jumping over a switch
         if(tile.getType() === GameTile.typeIds.SWITCH) {
             if(tile.getState() === GameTile.switchState.OFF && player.getType() === Player.types.HUMAN) {
                 AudioManager.playSound(AudioManager.soundNames.SWITCH_ON);
                 tile.setState(GameTile.switchState.ON);
+                this._getNewTelepod(player);
             } else if(tile.getState() === GameTile.switchState.ON && player.getType() === Player.types.OPPONENT) {
                 AudioManager.playSound(AudioManager.soundNames.SWITCH_OFF);
                 tile.setState(GameTile.switchState.OFF);
@@ -217,6 +319,13 @@ define([
             position.direction = Player.directions.FORWARD;
         }
         player.setPosition(position);
+    };
+    
+    GameState.prototype._evaluatePlayerPosition = function _evaluatePlayerPosition(player, tile, position) {
+        // todo: only do one thing?
+        this._handleHole(player, tile, position);
+        this._handleSwitch(player, tile, position);
+        this._handleAddons(player, tile, position);
     };
     
     GameState.prototype._stand = function _stand(player) {
@@ -241,8 +350,7 @@ define([
         tile = board.getTile(position.x, position.y);
         player.setPosition(position);
         
-        this._handleSwitch(player, tile, position);
-        this._handleHole(player, tile, position);
+        this._evaluatePlayerPosition(player, tile, position);
         this._eventEmitter.emit('renderRequest');
     };
     
@@ -251,7 +359,7 @@ define([
         var board = this._board;
         var tile, switchState;
         // Move player right, if possible
-        if(position.x < this._board.getCols() - 1) {
+        if(position.x < board.getCols() - 1) {
             position.direction = Player.directions.RIGHT;
             position.posture = Player.postures.RUN;
             position.x++;
@@ -259,8 +367,7 @@ define([
         tile = board.getTile(position.x, position.y);
         player.setPosition(position);
         
-        this._handleSwitch(player, tile, position);
-        this._handleHole(player, tile, position);
+        this._evaluatePlayerPosition(player, tile, position);
         this._eventEmitter.emit('renderRequest');
     };
     
@@ -275,7 +382,7 @@ define([
             player.setPosition(position);
             
             tile = board.getTile(position.x, position.y);
-            this._handleSwitch(player, tile, position);
+            this._evaluatePlayerPosition(player, tile, position);
             this._eventEmitter.emit('renderRequest');
         }
     };
@@ -291,7 +398,7 @@ define([
             player.setPosition(position);
             
             tile = board.getTile(position.x, position.y);
-            this._handleSwitch(player, tile, position);
+            this._evaluatePlayerPosition(player, tile, position);
             this._eventEmitter.emit('renderRequest');
         }
     };
@@ -323,13 +430,45 @@ define([
             AudioManager.playSound(AudioManager.soundNames.JUMP);
         }
         
-        this._handleSwitch(player, tile, position);
+        this._evaluatePlayerPosition(player, tile, position);
         this._eventEmitter.emit('renderRequest');
     };
     
     GameState.prototype._drop = function _drop(player) {
-        console.log("Drop!");
+        var numTelepods = player.getNumTelepods();
+        var position = player.getPosition();
+        if(numTelepods > 0 && this._numActiveTelepods < MAX_ACTIVE_TELEPODS) {
+            if(this._createTelepod(position)) {
+                --numTelepods;
+                ++(this._numActiveTelepods);
+                player.setNumTelepods(numTelepods);
+                this.updateTelepods(numTelepods);
+                AudioManager.playSound(AudioManager.soundNames.DROP);
+            }
+        }
         this._eventEmitter.emit('renderRequest');
+    };
+    
+    GameState.prototype._createTelepod = function _createTelepod(position) {
+        var context = this._context;
+        var col = position.x;
+        var row = position.y;
+        var typeId = Addon.typeIds.TELEPOD;
+        var telepod = new Addon(context, col, row, typeId);
+        var tile = this._board.getTile(col, row);
+        var addons = tile.getAddons();
+        var shouldAdd = true;
+        forOwn(addons, function(addon) {
+            if(addon.getType === Addon.typeIds.TELEPOD) {
+                shouldAdd = false;
+            }
+        });
+        
+        if(shouldAdd) {
+            tile.addAddon(telepod);
+            return true;
+        }
+        return false;
     };
     
     return GameState;

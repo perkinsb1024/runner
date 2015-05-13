@@ -1,7 +1,9 @@
 define([
-
+    'mout/array/forEach',
+    'mout/array/remove'
 ], function (
-    
+    forEach,
+    remove
 ) {
     var TILE_WIDTH = 16;
     var TILE_HEIGHT = 48;
@@ -16,12 +18,14 @@ define([
         this._row = row;
         this._typeId = typeId;
         this._type = GameTile.types[typeId] || GameTile.types[DEFAULT_TYPE];
+        this._addons = [];
         if(typeId === GameTile.typeIds.SWITCH) {   
             this._state = DEFAULT_SWITCH_STATE;
         }
     };
         
     GameTile.prototype.render = function() {
+        var scope = this;
         this._type.render(
             this._context,
             {
@@ -30,6 +34,21 @@ define([
             },
             this._state
         );
+        forEach(this._addons, function(addon) {
+            addon.render();
+        });
+    };
+    
+    GameTile.prototype.getAddons = function getAddons() {
+        return this._addons;
+    };
+    
+    GameTile.prototype.addAddon = function addAddon(addon) {
+        return this._addons.push(addon);
+    };
+    
+    GameTile.prototype.removeAddon = function removeAddon(addon) {
+        return remove(this._addons, addon);
     };
     
     GameTile.prototype.setState = function setState(state) {

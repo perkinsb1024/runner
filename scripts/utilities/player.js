@@ -6,7 +6,7 @@ define([
     movementStrategies,
     GameTile,
     clone
-) {
+) { 
     var tileSize = GameTile.getTileSize();
     var tileWidth = tileSize.width;
     var tileHeight = tileSize.height;
@@ -270,6 +270,8 @@ define([
         playerMovementStrategyKey = opts.movementStrategy;// || throw new Error("No `playerMovementStrategy` provided!");
         playerInitialPosition = opts.initialPosition;// || throw new Error("No `playerInitialPosition` provided!");
         playerType = opts.type;// || throw new Error("No `playerType` provided!");
+        playerNumExtraLives = opts.numExtraLives || 0;
+        playerNumTelepods = opts.numTelepods || 0;
         eventEmitter = opts.eventEmitter; // || throw new Error("No `eventEmitter` provided!");
         if(!(playerInitialPosition.hasOwnProperty('x') && playerInitialPosition.hasOwnProperty('y'))) {
             throw new Error("Invalid initial position!");
@@ -287,6 +289,8 @@ define([
             posture: Player.postures.STAND,
             direction: Player.directions.FORWARD
         }
+        this._numTelepods = playerNumTelepods;
+        this._numExtraLives = playerNumExtraLives;
         this._type = playerType;
         this._eventEmitter = eventEmitter;
         
@@ -378,6 +382,22 @@ define([
     
     Player.prototype.setName = function getName(name) {
         this._name = name;
+    };
+    
+    Player.prototype.getNumTelepods = function getNumTelepods() {
+        return this._numTelepods;
+    };
+    
+    Player.prototype.setNumTelepods = function setNumTelepods(numTelepods) {
+        this._numTelepods = numTelepods;
+    };
+    
+    Player.prototype.getNumExtraLives = function getNumExtraLives() {
+        return this._numExtraLives;
+    };
+    
+    Player.prototype.setNumExtraLives = function setNumExtraLives(numExtraLives) {
+        this._numExtraLives = numExtraLives;
     };
     
     Player.prototype.getPosition = function getPosition() {

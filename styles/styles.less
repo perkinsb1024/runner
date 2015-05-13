@@ -1,22 +1,90 @@
 body {
     text-align: center;
-    background-image: url('../images/src/runner_logo_background.png');
 }
 
 .gameWindow {
-    padding: 20px;
+    display: inline-block;
     background-color: #fff;
     border: 1px solid black;
 }
 
 .game {
+    display: block;
     width: 640px;
     height: 384px;
     margin: 0 auto;
-    border: 1px solid black;
     -ms-interpolation-mode: nearest-neighbor;
     image-rendering: -moz-crisp-edges;
     image-rendering: -o-crisp-edges;
     image-rendering: -webkit-optimize-contrast;
     image-rendering: crisp-edges;
+}
+
+.stats {
+    text-align: left;
+}
+
+.progressBar {
+    display: inline-block;
+    vertical-align: middle;
+    width: 315px;
+    height: 20px;
+    box-sizing: border-box;
+    border: 1px solid black;
+    margin: 5px;
+    background-color: #808080;   
+}
+
+.progressBar .fill {
+    width: 100%;
+    height: 100%;
+}
+.progressBar .fill.high {
+    background-color: #0F0;
+}
+.progressBar .fill.medium {
+    background-color: #FF0;
+}
+.progressBar .fill.low {
+    background-color: #F00;
+}
+
+.extraLives {
+    display: inline-block;
+    vertical-align: middle;
+    margin: 5px;
+    width: 70px;
+    height: 18px;
+}
+
+.extraLives .life {
+    display: inline-block;
+    margin: 0 2px;
+    width: 10px;
+    height: 18px;
+    background-image: url('../images/src/extra_life_yellow.png');
+}
+
+.telepods {
+    display: inline-block;
+    vertical-align: middle;
+    margin: 5px;
+    width: 80px
+}
+
+.telepods .telepod {
+    display: inline-block;
+    margin: 0 2px;
+    width: 11px;
+    height: 11px;
+    background-image: url('../images/src/telepod.png');
+}
+
+.logo {
+    display: inline-block;
+    float: right;
+    vertical-align: middle;
+    width: 80px;
+    height: 30px;
+    background-image: url('../images/src/runner_logo.png');
 }
