@@ -9,7 +9,8 @@ require([
     'utilities/game-state',
     'utilities/player',
     'levels/level1',
-    'levels/level2'
+    'levels/level2',
+    'levels/level3'
 ], function(
     $,
     EventEmitter2,
@@ -17,7 +18,8 @@ require([
     GameState,
     Player,
     level1,
-    level2
+    level2,
+    level3
 ) {
     var DEBUG = false;
     var STARTING_TELEPODS = 0;
@@ -37,6 +39,9 @@ require([
     
     if(getParam(url, 'level') == 2) {
        level = level2; 
+    }
+    else if(getParam(url, 'level') == 3) {
+       level = level3; 
     }
     var game = new GameState({
         canvas: canvas,

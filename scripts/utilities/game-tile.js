@@ -122,12 +122,12 @@ define([
             "_images": {
                 "switch_off": (function() {
                     var image = new Image();
-                    image.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAcCAMAAABifa5OAAAAFVBMVEX/AAD///8AAACAgIDAwMD/AAD////b+LSAAAAAAnRSTlMAAHaTzTgAAABLSURBVHgBpc1BCsAgEEPRid96/yO3xKBQcFH6V/Nmk0IrCugzKIkklapfjnrg28o/+g8t8R6VcJKRjmCiO4IxBhutHQBsuE8gGbsbDfYD3++M4vgAAAAASUVORK5CYII=";
+                    image.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAcCAMAAABifa5OAAAAElBMVEUAAAAAAACAgIDAwMD/AAD////7Dhz2AAAAAXRSTlMAQObYZgAAAEdJREFUeNql0EEKwDAIBdGfMbn/lYsaFFJKKX0rZ5EIilUQYAkkscnZDNTs8LnwP7o4l0oEvViJDAsfw593jPEQALcPzru1C42nAxWdZ5/HAAAAAElFTkSuQmCC";
                     return image;
                 })(),
                 "switch_on": (function() {
                     var image = new Image();
-                    image.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAcCAMAAABifa5OAAAAElBMVEX///8AAAAA/wCAgIDAwMD///9N0QIsAAAAAXRSTlMAQObYZgAAAERJREFUeNqlzTEOgEAMA0Efm/z/yyjBIroCCcRU3spCNwTEBSRhKnE0vF3erv8xxX5aaHoHtWg4MpOJtR4CmCjfAtPuBLhDAlLoQTwFAAAAAElFTkSuQmCC";
+                    image.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAcCAMAAABifa5OAAAAElBMVEUAAAAAAAAA/wCAgIDAwMD////JZtsUAAAAAXRSTlMAQObYZgAAAEZJREFUeNqlzkEKwDAIBdGfjrn/lYsxVRooJeStHDcqekKABZDEJGfXQM4OnxPnUcVyNP/Rjx6IsOEJ31e09hFAhdsLJr3dIh8C1NJFG24AAAAASUVORK5CYII=";
                     return image;
                 })(),
                 "rock": (function() {

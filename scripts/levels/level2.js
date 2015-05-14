@@ -10,6 +10,7 @@ define([
     var H = GameTile.typeIds.LADDER;
     var o = GameTile.typeIds.SWITCH;
     return {
+        "level": 2,
         "background": {
             "imageData": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAMAAADz0U65AAAABlBMVEUA//////+xuF6gAAAADklEQVQI12NgZIABilgAAWgACV4W/60AAAAASUVORK5CYII=",
             "size": {
