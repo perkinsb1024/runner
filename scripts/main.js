@@ -19,9 +19,9 @@ require([
     level1,
     level2
 ) {
-    var DEBUG = true;
+    var DEBUG = false;
     var STARTING_TELEPODS = 0;
-    var STARTING_EXTRA_LIVES = 2;
+    var STARTING_EXTRA_LIVES = 3;
     
     var scope = this;
     var url = document.location.href;
@@ -63,7 +63,7 @@ require([
             position.x = x;
             position.y = y;
             game._players[0].setPosition(position);
-            game._evaluatePlayerPosition(player, game._board.getTile(x, y), position);
+            game._evaluatePlayerPosition(player, position);
         });
     }
     

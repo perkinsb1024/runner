@@ -429,8 +429,11 @@ define([
         player.setPosition(position);
     };
     
-    GameState.prototype._evaluatePlayerPosition = function _evaluatePlayerPosition(player, tile, position) {
+    GameState.prototype._evaluatePlayerPosition = function _evaluatePlayerPosition(player, position) {
         // todo: only do one thing?
+        // Instead of taking tile as a parameter, get it based on the new position since
+            // position could have changed since we last retrieved tile
+        var tile = this._board.getTile(position.x, position.y);
         this._handleHole(player, tile, position);
         this._handleSwitch(player, tile, position);
         this._handleAddons(player, tile, position);
@@ -458,7 +461,7 @@ define([
         tile = board.getTile(position.x, position.y);
         player.setPosition(position);
         
-        this._evaluatePlayerPosition(player, tile, position);
+        this._evaluatePlayerPosition(player, position);
         this._eventEmitter.emit('renderRequest');
     };
     
@@ -475,7 +478,7 @@ define([
         tile = board.getTile(position.x, position.y);
         player.setPosition(position);
         
-        this._evaluatePlayerPosition(player, tile, position);
+        this._evaluatePlayerPosition(player, position);
         this._eventEmitter.emit('renderRequest');
     };
     
@@ -490,7 +493,7 @@ define([
             player.setPosition(position);
             
             tile = board.getTile(position.x, position.y);
-            this._evaluatePlayerPosition(player, tile, position);
+            this._evaluatePlayerPosition(player, position);
             this._eventEmitter.emit('renderRequest');
         }
     };
@@ -506,7 +509,7 @@ define([
             player.setPosition(position);
             
             tile = board.getTile(position.x, position.y);
-            this._evaluatePlayerPosition(player, tile, position);
+            this._evaluatePlayerPosition(player, position);
             this._eventEmitter.emit('renderRequest');
         }
     };
@@ -538,7 +541,7 @@ define([
             AudioManager.playSound(AudioManager.soundNames.JUMP);
         }
         
-        this._evaluatePlayerPosition(player, tile, position);
+        this._evaluatePlayerPosition(player, position);
         this._eventEmitter.emit('renderRequest');
     };
     
