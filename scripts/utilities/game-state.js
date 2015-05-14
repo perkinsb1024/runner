@@ -2,6 +2,7 @@ define([
     'jquery',
     'mout/array/forEach',
     'mout/object/forOwn',
+    'mout/queryString/getParam',
     'utilities/game-board',
     'utilities/game-tile',
     'utilities/audio-manager',
@@ -11,6 +12,7 @@ define([
     $,
     forEach,
     forOwn,
+    getParam,
     GameBoard,
     GameTile,
     AudioManager,
@@ -344,7 +346,9 @@ define([
             --(this._numActiveTelepods);
             position = board.getRandomPosition();
             player.setPosition(position);
+            return true;
         };
+        return false;
     };
     
     GameState.prototype._handleNeutrinoCan = function _handleNeutrinoCan(player, tile, neutrinoCan) {
@@ -360,9 +364,11 @@ define([
             AudioManager.playSound(AudioManager.soundNames.CAN);
             this._createDoorIfPossible(player);
         };
+        return false;
     };
     
     GameState.prototype._handleDoor = function _handleDoor(player, tile, neutrinoCan) {
+        var scope = this;
         var position = player.getPosition();
         if(player.getType() === Player.types.HUMAN) {
             AudioManager.playSound(AudioManager.soundNames.TELEPORT);
@@ -376,10 +382,23 @@ define([
             }
             this._eventEmitter.emit('renderRequest');
             setTimeout(function() {
-                console.log('You win!');
-                location.href+="?level=2";
+                var url = document.location.href;
+                if(getParam(url, 'level') == 1) {
+                   location.href='index.html?level=2'; 
+                }
+                if(getParam(url, 'level') == 2) {
+                   location.href='index.html?level=3';
+                }
+                else if(getParam(url, 'level') == 3) {
+                   console.log('You win!');
+                   scope.endGame();
+                }
+                else {
+                   location.href='index.html?level=2';
+                }
             }, 1000);
         };
+        return false;
     };
     
     GameState.prototype._handleAddons = function _handleAddons(player, tile, position) {
@@ -391,13 +410,13 @@ define([
                 case Addon.typeIds.MARBLE:
                     break;
                 case Addon.typeIds.TELEPOD:
-                    scope._handleTelepod(player, tile, addon)
+                    return scope._handleTelepod(player, tile, addon)
                     break;
                 case Addon.typeIds.NEUTRINO_CAN:
-                    scope._handleNeutrinoCan(player, tile, addon)
+                    return scope._handleNeutrinoCan(player, tile, addon)
                     break;
                 case Addon.typeIds.DOOR:
-                    scope._handleDoor(player, tile, addon);
+                    return scope._handleDoor(player, tile, addon);
                     break;
             }
         });
@@ -417,6 +436,7 @@ define([
                 this._destroyDoorIfPossible(player);
             }
         }
+        return false;
     };
     
     GameState.prototype._handleHole = function _handleHole(player, tile, position) {
@@ -425,18 +445,37 @@ define([
             position.y++;
             position.posture = Player.postures.FALL;
             position.direction = Player.directions.FORWARD;
+            player.setPosition(position);
+            return true;
         }
-        player.setPosition(position);
+        return false;
     };
     
     GameState.prototype._evaluatePlayerPosition = function _evaluatePlayerPosition(player, position) {
         // todo: only do one thing?
         // Instead of taking tile as a parameter, get it based on the new position since
             // position could have changed since we last retrieved tile
+        var scope = this;
+        var functions = [this._handleSwitch, this._handleAddons, this._handleHole];
         var tile = this._board.getTile(position.x, position.y);
+        var positionDidChange = false;
+        forEach(functions, function(fn) {
+            positionDidChange = fn.call(scope, player, tile, position);
+            if(positionDidChange) {
+                return false; // break out of loop
+            }
+        });
+        if(positionDidChange) {
+            // The player's position has changed, so evaluate new state
+            
+            // todo: instead of evaluating right away, mark the player as dirty and evaluate again on the next move, block moves while player is dirty
+            this._evaluatePlayerPosition(player, player.getPosition());
+        }
+/*
         this._handleHole(player, tile, position);
         this._handleSwitch(player, tile, position);
         this._handleAddons(player, tile, position);
+*/
     };
     
     GameState.prototype._stand = function _stand(player) {
@@ -517,22 +556,15 @@ define([
     GameState.prototype._jump = function _jump(player) {
         var position = player.getPosition();
         var board = this._board;
-        var didFall = false;
         var didJump = false;
-        var tile;
         if(position.direction === Player.directions.LEFT && position.x > 1) {
             position.posture = Player.postures.JUMP;
-            position.x-=2;
+            position.x -= 2;
             didJump = true;
-        } else if(position.direction === Player.directions.RIGHT && position.x < this._board.getCols() - 2) {
+        } else if(position.direction === Player.directions.RIGHT && position.x < board.getCols() - 2) {
             position.posture = Player.postures.JUMP;
-            position.x+=2;
+            position.x += 2;
             didJump = true;
-        }
-        tile = board.getTile(position.x, position.y);
-        if(position.y < board.getRows() - 1 && tile.getType() === GameTile.typeIds.HOLE) {
-            position.y++;
-            didFall = true;
         }
 
         player.setPosition(position);
