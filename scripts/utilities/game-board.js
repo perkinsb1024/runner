@@ -1,11 +1,13 @@
 define([
     'jquery',
     'mout/array/forEach',
-    'utilities/game-tile'
+    'utilities/game-tile',
+    'utilities/addon'
 ], function (
     $,
     forEach,
-    GameTile
+    GameTile,
+    Addon
 ) {
     var tileSize = GameTile.getTileSize();
     var tileWidth = tileSize.width;
@@ -77,13 +79,49 @@ define([
     GameBoard.prototype.getRows = function getRows() {
         return this._rows;
     };
-//     GameBoard.prototype.setBoard = function(board) { this._board = board; };
-//     GameBoard.prototype.getBoard = function() { return this._board; };
-
+    GameBoard.prototype.getRandomPosition = function getRandomPosition() {
+        return {
+            x: Math.floor(Math.random() * this._cols),
+            y: Math.floor(Math.random() * this._rows)
+        };
+    };
+    GameBoard.prototype.allSwitchesActive = function allSwitchesActive() {
+        var allSwitchesActive = true;
+        forEach(this._board, function(tile) {
+            if(tile.getType() === GameTile.typeIds.SWITCH && tile.getState() === GameTile.switchState.OFF) {
+                allSwitchesActive = false;
+                return false;
+            }
+        });
+        return allSwitchesActive;
+    };
+    
+    /**
+     * Destroy the first door found
+     */
+    GameBoard.prototype.destroyDoor = function destroyDoor() {
+        var doorDestroyed = false;
+        forEach(this._board, function(tile) {
+            var addons = tile.getAddons();
+            forEach(addons, function(addon) {
+                if(addon.getType() === Addon.typeIds.DOOR) {
+                    tile.removeAddon(addon);
+                    delete addon;
+                    doorDestroyed = true;
+                    return false; // break out of loop
+                };
+            });
+            if(doorDestroyed) {
+                return false; // break out of loop
+            }
+        });
+        return doorDestroyed;
+    };
+    
     /**
      * Render the board
      */
-    GameBoard.prototype.render = function() {
+    GameBoard.prototype.render = function render() {
         var scope = this;
         var drawBackground = function() {
             var x, y;

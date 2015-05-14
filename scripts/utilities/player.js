@@ -11,6 +11,8 @@ define([
     var tileWidth = tileSize.width;
     var tileHeight = tileSize.height;
     
+    var EMPTY_IMAGE = "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
+    
     var playerCount = 0;
         
     var attachMovementStrategyFunctions = function attachMovementStrategyFunctions(movementStrategy) {
@@ -194,6 +196,20 @@ define([
                     return image;
                 })()
             ],
+            "OPPONENT_GONE": [
+                (function() {
+                    var image = new Image();
+                    image.src = EMPTY_IMAGE;
+                    return image;
+                })()
+            ],
+            "HUMAN_GONE": [
+                (function() {
+                    var image = new Image();
+                    image.src = EMPTY_IMAGE;
+                    return image;
+                })()
+            ]
         };
         return images;
     })();
@@ -222,6 +238,10 @@ define([
         }
         else if(posture === Player.postures.FALL) {
             imageKey += '_FALL';
+        }
+
+        else if(posture === Player.postures.GONE) {
+            imageKey += '_GONE';
         }
         else {
             imageKey += '_STAND';
@@ -290,6 +310,7 @@ define([
             direction: Player.directions.FORWARD
         }
         this._numTelepods = playerNumTelepods;
+        this._numNeutrinoCans = 0;
         this._numExtraLives = playerNumExtraLives;
         this._type = playerType;
         this._eventEmitter = eventEmitter;
@@ -392,6 +413,14 @@ define([
         this._numTelepods = numTelepods;
     };
     
+    Player.prototype.getNumNeutrinoCans = function getNumNeutrinoCans() {
+        return this._numNeutrinoCans;
+    };
+    
+    Player.prototype.setNumNeutrinoCans = function setNumNeutrinoCans(numNeutrinoCans) {
+        this._numNeutrinoCans = numNeutrinoCans;
+    };
+    
     Player.prototype.getNumExtraLives = function getNumExtraLives() {
         return this._numExtraLives;
     };
@@ -443,7 +472,8 @@ define([
         RUN: 1,
         CLIMB: 2,
         JUMP: 3,
-        FALL: 4
+        FALL: 4,
+        GONE: 5
     };
     
     return Player;

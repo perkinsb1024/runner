@@ -18,9 +18,9 @@ define([
         this._row = row;
         this._typeId = typeId;
         this._type = Addon.types[typeId] || Addon.types[DEFAULT_TYPE];
-        if(typeId === GameTile.typeIds.SWITCH) {
+        if(typeId === Addon.typeIds.MARBLE) {
             this._subTypeId = subTypeId || DEFAULT_SUB_TYPE;
-            this._subType = Addon.subTypes[subTypeId] || Addon.subTypes[DEFAULT_SUB_TYPE];
+            this._subType = Addon.subTypes[this._subTypeId];
         }
     };
         
@@ -106,7 +106,7 @@ define([
             },
             "render": function(context, loc, subTypeId) {
                 console.log(subTypeId, this._images[subTypeId]);
-                context.drawImage(this._images[subTypeId], loc.x, loc.y + (tileHeight - 16 - 16));
+                context.drawImage(this._images[subTypeId], loc.x + 4, loc.y + (tileHeight - 16 - 16));
             }
         },
         1: { // Telepod
@@ -118,7 +118,7 @@ define([
                 })()
             },
             "render": function(context, loc) {
-                context.drawImage(this._images.telepod, loc.x, loc.y + (tileHeight - 16 - 16));
+                context.drawImage(this._images.telepod, loc.x + 2, loc.y + (tileHeight - 16 - 16));
             }
         },
         2: { // Neutrino can 
@@ -130,20 +130,19 @@ define([
                 })()
             },
             "render": function(context, loc) {
-                context.drawImage(this._images.can, loc.x, loc.y + (tileHeight - 16 - 12));
+                context.drawImage(this._images.can, loc.x + 4, loc.y + (tileHeight - 16 - 12));
             }
         },
         3: { // Door 
             "_images": {
                 "door": (function() {
                     var image = new Image();
-                    // todo: Get door image
-                    //image.src = imageDir + 'door.png';
+                    image.src = imageDir + 'door.png';
                     return image;
                 })()
             },
             "render": function(context, loc) {
-                context.drawImage(this._images.door, loc.x, loc.y + (tileHeight - 16 - 16));
+                context.drawImage(this._images.door, loc.x, loc.y);
             }
         }
     };

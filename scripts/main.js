@@ -1,3 +1,7 @@
+// to do: BUG! Jump and land on a hole, you fall two levels!
+// to do: BUG! Jump over a switch or addon, it does not activate
+
+
 require([
     'jquery',
     'eventemitter2',
@@ -15,7 +19,8 @@ require([
     level1,
     level2
 ) {
-    var STARTING_TELEPODS = 2;
+    var DEBUG = true;
+    var STARTING_TELEPODS = 0;
     var STARTING_EXTRA_LIVES = 2;
     
     var scope = this;
@@ -47,6 +52,20 @@ require([
             rows: 8
         }
     });
+    
+    if(DEBUG) {
+        $(canvas).on('click', function(event) {
+            var x = Math.floor((event.pageX - $(this).position().left) / 16);
+            var y = Math.floor((event.pageY - $(this).position().top) / 48);
+            var nearestTile = game._board.getTile(x, y);
+            var player = game._players[0];
+            var position = player.getPosition();
+            position.x = x;
+            position.y = y;
+            game._players[0].setPosition(position);
+            game._evaluatePlayerPosition(player, game._board.getTile(x, y), position);
+        });
+    }
     
     game.addPlayer({
         name: 'Player 1',

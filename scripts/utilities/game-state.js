@@ -21,7 +21,10 @@ define([
     var tileWidth = tileSize.width;
     var tileHeight = tileSize.height;
     
+    var TIME_SCALE_FACTOR = 1;
     var AUTO_PLAY_MUSIC = false;
+    var MAX_TOTAL_NEUTRINO_CANS = 1;
+    var MAX_ACTIVE_DOORS = 1;
     var MAX_ACTIVE_TELEPODS = 1;
     var MAX_TELEPODS = 5;
     var TELEPOD_PROBABILITY_DECAY = 1.6;
@@ -67,11 +70,13 @@ define([
         this._remainingTime = duration;
         this._telepodProbability = 0.96;
         this._numActiveTelepods = 0;
+        this._numTotalNeutrinoCans = 0;
+        this._numActiveDoors = 0;
         this._gameOverImage = new Image();
         this._gameOverImage.src = ('images/src/game_over.png');
         this._backgroundMusic = music;
         music.loop = true;
-        music.volume = 0.6;
+        music.volume = 0.8;
         music.src = level.music;
         if(AUTO_PLAY_MUSIC) {
             this.playMusic();
@@ -94,7 +99,8 @@ define([
         var scope = this;
         this._interval = setInterval(function() {
             scope.decrementTime.call(scope, 1000)
-        }, 1000);
+            scope._intervalLogic.call(scope);
+        }, 1000 / TIME_SCALE_FACTOR);
     };
     
     GameState.prototype.disableTimer = function disableTimer() {
@@ -251,7 +257,7 @@ define([
         }
     };
     
-    GameState.prototype._getNewTelepod = function _getNewTelepod(player) {
+    GameState.prototype._getNewTelepodIfPossible = function _getNewTelepodIfPossible(player) {
         var numTelepods = player.getNumTelepods();
         if(player.getType() === Player.types.HUMAN) {
             if(numTelepods < MAX_TELEPODS && this._telepodProbability > Math.random()) {
@@ -263,18 +269,116 @@ define([
         }
     };
     
+    GameState.prototype._createDoorIfPossible = function _createDoorIfPossible(player) {
+        var position, door, tile, addons;
+        var board = this._board;
+        var context = this._context;
+        var numNeutrinoCans = player.getNumNeutrinoCans();
+        var doorTypeId = Addon.typeIds.DOOR;
+        if(!(this._numActiveDoors < MAX_ACTIVE_DOORS && // Must have fewer than max number of allowed doors
+            player.getType() === Player.types.HUMAN && // Active player (player who flipped switch) must be human 
+            numNeutrinoCans >= MAX_TOTAL_NEUTRINO_CANS && // Active player must have enough neutrino cans
+            board.allSwitchesActive())) // All switchs must be active
+        {
+            // Conditions not met to create door
+            return false;
+        }
+        
+        do {
+            position = board.getRandomPosition();
+            tile = board.getTile(position.x, position.y);
+            addons = tile.getAddons();
+        }
+        while(addons.length > 0 || tile.getType() != GameTile.typeIds.FLOOR);
+        
+        door = new Addon(context, position.x, position.y, doorTypeId);
+        tile.addAddon(door);
+        ++(this._numActiveDoors);
+        return true;
+    };
+    
+    GameState.prototype._destroyDoorIfPossible = function _destroyDoorIfPossible(player) {
+        var board = this._board;
+        if(!(this._numActiveDoors > 0 && // Must have at least one door active
+            player.getType() === Player.types.OPPONENT && // Active player (player who flipped switch) must be opponent 
+            !board.allSwitchesActive())) // At least one switch must be inactive
+        {
+            // Conditions not met to destroy door
+            return false;
+        }
+        
+        board.destroyDoor();
+        --(this._numActiveDoors);
+        
+        return true;
+    };
+    
+    GameState.prototype._createNeutrinoCanIfPossible = function _createNeutrinoCanIfPossible() {
+        var position, neutrinoCan, tile, addons;
+        var context = this._context;
+        var board = this._board;
+        var neutrinoCanTypeId = Addon.typeIds.NEUTRINO_CAN;
+        if(this._numTotalNeutrinoCans < MAX_TOTAL_NEUTRINO_CANS) {
+            do {
+                position = board.getRandomPosition();
+                tile = board.getTile(position.x, position.y);
+                addons = tile.getAddons();
+            }
+            while(addons.length > 0 || tile.getType() != GameTile.typeIds.FLOOR);
+            
+            neutrinoCan = new Addon(context, position.x, position.y, neutrinoCanTypeId);
+            tile.addAddon(neutrinoCan);
+            ++(this._numTotalNeutrinoCans);
+            return true;
+        }
+        return false;
+    };
+    
     GameState.prototype._handleTelepod = function _handleTelepod(player, tile, telepod) {
         var position = player.getPosition();
         var board = this._board;
 
-        player.setPosition(position);
         if(player.getType() === Player.types.OPPONENT) {
             tile.removeAddon(telepod);
             delete telepod;
             --(this._numActiveTelepods);
-            position.x = Math.floor(Math.random() * board.getCols());
-            position.y = Math.floor(Math.random() * board.getRows());
+            position = board.getRandomPosition();
             player.setPosition(position);
+        };
+    };
+    
+    GameState.prototype._handleNeutrinoCan = function _handleNeutrinoCan(player, tile, neutrinoCan) {
+        var position = player.getPosition();
+        var board = this._board;
+        var numPlayerNeutrinoCans = player.getNumNeutrinoCans();
+
+        if(player.getType() === Player.types.HUMAN) {
+            ++numPlayerNeutrinoCans;
+            tile.removeAddon(neutrinoCan);
+            delete neutrinoCan;
+            player.setNumNeutrinoCans(numPlayerNeutrinoCans);
+            AudioManager.playSound(AudioManager.soundNames.CAN);
+            this._createDoorIfPossible(player);
+        };
+    };
+    
+    GameState.prototype._handleDoor = function _handleDoor(player, tile, neutrinoCan) {
+        var position = player.getPosition();
+        if(player.getType() === Player.types.HUMAN) {
+            AudioManager.playSound(AudioManager.soundNames.TELEPORT);
+            position.posture = Player.postures.GONE;
+            position.direction = Player.directions.BACKWARD;
+            player.setPosition(position);
+            this.pause();
+            while(this._numActiveDoors > 0) {
+                this._board.destroyDoor();
+                --(this._numActiveDoors);
+            }
+            this._eventEmitter.emit('renderRequest');
+            setTimeout(function() {
+                console.log('You win!');
+                location.href+="?level=2";
+            }, 1000);
         };
     };
     
@@ -290,8 +394,10 @@ define([
                     scope._handleTelepod(player, tile, addon)
                     break;
                 case Addon.typeIds.NEUTRINO_CAN:
+                    scope._handleNeutrinoCan(player, tile, addon)
                     break;
                 case Addon.typeIds.DOOR:
+                    scope._handleDoor(player, tile, addon);
                     break;
             }
         });
@@ -303,10 +409,12 @@ define([
             if(tile.getState() === GameTile.switchState.OFF && player.getType() === Player.types.HUMAN) {
                 AudioManager.playSound(AudioManager.soundNames.SWITCH_ON);
                 tile.setState(GameTile.switchState.ON);
-                this._getNewTelepod(player);
+                this._getNewTelepodIfPossible(player);
+                this._createDoorIfPossible(player);
             } else if(tile.getState() === GameTile.switchState.ON && player.getType() === Player.types.OPPONENT) {
                 AudioManager.playSound(AudioManager.soundNames.SWITCH_OFF);
                 tile.setState(GameTile.switchState.OFF);
+                this._destroyDoorIfPossible(player);
             }
         }
     };
@@ -469,6 +577,13 @@ define([
             return true;
         }
         return false;
+    };
+    
+    GameState.prototype._intervalLogic = function() {
+        var neutrinoCanProbability = 1 - (1.1 * this._remainingTime / this._duration)
+        if(neutrinoCanProbability > Math.random()) {
+            this._createNeutrinoCanIfPossible();
+        }
     };
     
     return GameState;
