@@ -55,7 +55,8 @@ define([
             var col = index % cols;
             var row = (index - col) / cols;
             // Todo: Shouldn't need col, row - see comment in game-tile.js :: GameTile()
-            scope._board[index] = new GameTile(context, col, row, type)
+            var tile = new GameTile(context, col, row, type, level.floorTypeId);
+            scope._board[index] = tile;
         });
     };
     

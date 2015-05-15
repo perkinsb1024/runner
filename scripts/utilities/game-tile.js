@@ -10,7 +10,9 @@ define([
     var DEFAULT_TYPE = 1; // Floor
     var DEFAULT_SWITCH_STATE = 0; // Off
     
-    var GameTile = function GameTile(context, col, row, typeId) {
+    var imageDir = 'images/src/';
+    
+    var GameTile = function GameTile(context, col, row, typeId, subTypeId) {
         // These shoudln't take col, row - They should not be aware of the game board. Just draw and return themself
             // Figure out how to return a canvas-drawable section like that
         this._context = context;
@@ -18,6 +20,7 @@ define([
         this._row = row;
         this._typeId = typeId;
         this._type = GameTile.types[typeId] || GameTile.types[DEFAULT_TYPE];
+        this._subTypeId = subTypeId || GameTile.subTypeIds.ROCK;
         this._addons = [];
         if(typeId === GameTile.typeIds.SWITCH) {   
             this._state = DEFAULT_SWITCH_STATE;
@@ -32,6 +35,7 @@ define([
                 "x": this._col * TILE_WIDTH,
                 "y": this._row * TILE_HEIGHT
             },
+            this._subTypeId,
             this._state
         );
         forEach(this._addons, function(addon) {
@@ -57,12 +61,20 @@ define([
         }
     };
     
+    GameTile.prototype.getState = function getState() {
+        return this._state;
+    };
+    
     GameTile.prototype.getType = function getType() {
         return this._typeId;
     };
     
-    GameTile.prototype.getState = function getState() {
-        return this._state;
+    GameTile.prototype.setSubType = function setSubType(subTypeId) {
+        return this._subTypeId = subTypeId;
+    };
+    
+    GameTile.prototype.getSubType = function getSubType() {
+        return this._subTypeId;
     };
     
     GameTile.getTileSize = function getTileSize() {
@@ -84,6 +96,11 @@ define([
         SWITCH: 3
     };
     
+    GameTile.subTypeIds = {
+        ROCK: 0,
+        BRICK: 1
+    };
+    
     GameTile.types = {
         0: { // Hole
             "render": function(context, loc) { }
@@ -92,58 +109,88 @@ define([
             "_images": {
                 "rock": (function() {
                     var image = new Image();
-                    image.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAD1BMVEX///8AAACAgIDAwMD///9iTTvsAAAAAXRSTlMAQObYZgAAAFhJREFUGNNNjkkSxEAMgxDk/2+eQ08W3RBylQHMLCcAh042yKsnV+NGO4pXqzaegZdVXHk400Xpza3Q15uybzNj/6ZaOphO1zyfwjzX7jBs6rzxHn0Z9sx/PT4B+YNOt7sAAAAASUVORK5CYII=";
+                    image.src = imageDir + 'rock.png';
+                    return image;
+                })(),
+                "brick": (function() {
+                    var image = new Image();
+                    image.src = imageDir + 'brick.png';
                     return image;
                 })()
             },
-            "render": function(context, loc) {
-                context.drawImage(this._images.rock, loc.x, loc.y + (TILE_HEIGHT - 16));
+            "render": function(context, loc, subTypeId) {
+                if(subTypeId === GameTile.subTypeIds.ROCK) {
+                    context.drawImage(this._images.rock, loc.x, loc.y + (TILE_HEIGHT - 16));
+                }
+                else if(subTypeId === GameTile.subTypeIds.BRICK) {
+                    context.drawImage(this._images.brick, loc.x, loc.y + (TILE_HEIGHT - 16));
+                }
             }
         },
         2: { // Ladder 
             "_images": {
                 "ladder": (function() {
                     var image = new Image();
-                    image.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAwCAMAAAAvgQplAAAACVBMVEX///+AgID//wAR4nKzAAAAAXRSTlMAQObYZgAAACFJREFUeAFjYGJiZIABEIdeAsgAqgIJYGgZDAKj4TEaHgCRgAI7ziC/9QAAAABJRU5ErkJggg==";
+                    image.src = imageDir + 'ladder.png';
                     return image;
                 })(),
                 "rock": (function() {
                     var image = new Image();
-                    image.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAD1BMVEX///8AAACAgIDAwMD///9iTTvsAAAAAXRSTlMAQObYZgAAAFhJREFUGNNNjkkSxEAMgxDk/2+eQ08W3RBylQHMLCcAh042yKsnV+NGO4pXqzaegZdVXHk400Xpza3Q15uybzNj/6ZaOphO1zyfwjzX7jBs6rzxHn0Z9sx/PT4B+YNOt7sAAAAASUVORK5CYII=";
+                    image.src = imageDir + 'rock.png';
+                    return image;
+                })(),
+                "brick": (function() {
+                    var image = new Image();
+                    image.src = imageDir + 'brick.png';
                     return image;
                 })()
             },
-            "render": function(context, loc) {
+            "render": function(context, loc, subTypeId) {
                 context.drawImage(this._images.ladder, loc.x, loc.y - 15);
-                context.drawImage(this._images.rock, loc.x, loc.y + (TILE_HEIGHT - 16));
+                if(subTypeId === GameTile.subTypeIds.ROCK) {
+                    context.drawImage(this._images.rock, loc.x, loc.y + (TILE_HEIGHT - 16));
+                }
+                else if(subTypeId === GameTile.subTypeIds.BRICK) {
+                    context.drawImage(this._images.brick, loc.x, loc.y + (TILE_HEIGHT - 16));
+                }
             }
         },
         3: { // Switch 
             "_images": {
                 "switch_off": (function() {
                     var image = new Image();
-                    image.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAcCAMAAABifa5OAAAAElBMVEUAAAAAAACAgIDAwMD/AAD////7Dhz2AAAAAXRSTlMAQObYZgAAAEdJREFUeNql0EEKwDAIBdGfMbn/lYsaFFJKKX0rZ5EIilUQYAkkscnZDNTs8LnwP7o4l0oEvViJDAsfw593jPEQALcPzru1C42nAxWdZ5/HAAAAAElFTkSuQmCC";
+                    image.src = imageDir + 'switch_off.png';
                     return image;
                 })(),
                 "switch_on": (function() {
                     var image = new Image();
-                    image.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAcCAMAAABifa5OAAAAElBMVEUAAAAAAAAA/wCAgIDAwMD////JZtsUAAAAAXRSTlMAQObYZgAAAEZJREFUeNqlzkEKwDAIBdGfjrn/lYsxVRooJeStHDcqekKABZDEJGfXQM4OnxPnUcVyNP/Rjx6IsOEJ31e09hFAhdsLJr3dIh8C1NJFG24AAAAASUVORK5CYII=";
+                    image.src = imageDir + 'switch_on.png';
                     return image;
                 })(),
                 "rock": (function() {
                     var image = new Image();
-                    image.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAD1BMVEX///8AAACAgIDAwMD///9iTTvsAAAAAXRSTlMAQObYZgAAAFhJREFUGNNNjkkSxEAMgxDk/2+eQ08W3RBylQHMLCcAh042yKsnV+NGO4pXqzaegZdVXHk400Xpza3Q15uybzNj/6ZaOphO1zyfwjzX7jBs6rzxHn0Z9sx/PT4B+YNOt7sAAAAASUVORK5CYII=";
+                    image.src = imageDir + 'rock.png';
+                    return image;
+                })(),
+                "brick": (function() {
+                    var image = new Image();
+                    image.src = imageDir + 'brick.png';
                     return image;
                 })()
             },
-            "render": function(context, loc, state) {
-                if(state) {
+            "render": function(context, loc, subTypeId, state) {
+                if(state === GameTile.switchState.ON) {
                     context.drawImage(this._images.switch_on, loc.x + 2, loc.y);
                 }
-                else {
+                else if(state === GameTile.switchState.OFF){
                     context.drawImage(this._images.switch_off, loc.x + 2, loc.y);
                 }
-                context.drawImage(this._images.rock, loc.x, loc.y + (TILE_HEIGHT - 16));
+                if(subTypeId === GameTile.subTypeIds.ROCK) {
+                    context.drawImage(this._images.rock, loc.x, loc.y + (TILE_HEIGHT - 16));
+                }
+                else if(subTypeId === GameTile.subTypeIds.BRICK) {
+                    context.drawImage(this._images.brick, loc.x, loc.y + (TILE_HEIGHT - 16));
+                }
             }
         }
     };

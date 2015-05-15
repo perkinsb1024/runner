@@ -20,7 +20,6 @@ define([
         this._type = Addon.types[typeId] || Addon.types[DEFAULT_TYPE];
         if(typeId === Addon.typeIds.MARBLE) {
             this._subTypeId = subTypeId || DEFAULT_SUB_TYPE;
-            this._subType = Addon.subTypes[this._subTypeId];
         }
     };
         
@@ -39,18 +38,25 @@ define([
         return remove(this._addons, addon);
     };
     
-    Addon.prototype.setState = function setState(state) {
-        if(this._typeId === 3) {
-            this._state = state;
-        }
-    };
-    
     Addon.prototype.getType = function getType() {
         return this._typeId;
     };
     
-    Addon.prototype.getState = function getState() {
-        return this._state;
+    Addon.prototype.getSubType = function getSubType() {
+        return this._subTypeId;
+    };
+    
+    Addon.prototype.getPosition = function getPosition() {
+        var scope = this;
+        return {
+            "x": scope._col,
+            "y": scope._row
+        };
+    };
+    
+    Addon.prototype.setPosition = function setPosition(position) {
+        this._col = position.x;
+        this._row = position.y;
     };
     
     Addon.getTileSize = function getTileSize() {
@@ -105,8 +111,7 @@ define([
                 })(),
             },
             "render": function(context, loc, subTypeId) {
-                console.log(subTypeId, this._images[subTypeId]);
-                context.drawImage(this._images[subTypeId], loc.x + 4, loc.y + (tileHeight - 16 - 16));
+                context.drawImage(this._images[subTypeId], loc.x + 4, loc.y + (tileHeight - 16 - 8));
             }
         },
         1: { // Telepod

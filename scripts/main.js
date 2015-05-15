@@ -62,12 +62,12 @@ require([
         $(canvas).on('click', function(event) {
             var x = Math.floor((event.pageX - $(this).position().left) / 16);
             var y = Math.floor((event.pageY - $(this).position().top) / 48);
-            var nearestTile = game._board.getTile(x, y);
             var player = game._players[0];
-            var position = player.getPosition();
-            position.x = x;
-            position.y = y;
-            game._players[0].setPosition(position);
+            var position = {
+                x: x,
+                y: y
+            }
+            game._teleportPlayer(player, position);
             game._evaluatePlayerPosition(player, position);
         });
     }

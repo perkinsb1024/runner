@@ -1,9 +1,11 @@
 define([
     'utilities/game-board',
     'utilities/game-tile',
+    'utilities/addon'
 ], function (
     GameBoard,
-    GameTile
+    GameTile,
+    Addon
 ) {
     var u = GameTile.typeIds.HOLE;
     var _ = GameTile.typeIds.FLOOR;
@@ -20,6 +22,14 @@ define([
                 "width": 8,
                 "height": 8
             }
+        },
+        "floorTypeId": GameTile.subTypeIds.BRICK,
+        "marbleProbability": 0.1,
+        "marbleTypeCumulativeProbability": {
+            0: 0.2, // Red
+            1: 0.7, // Purple
+            2: 0.85, // Dark gray
+            3: 1, // Light gray
         },
         "music": "audio/music/level03.mp3",
         "map": [

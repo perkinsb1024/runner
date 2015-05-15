@@ -1,5 +1,6 @@
 define([
     'jquery',
+    'mout/array/remove',
     'mout/array/forEach',
     'mout/object/forOwn',
     'mout/queryString/getParam',
@@ -10,6 +11,7 @@ define([
     'utilities/player'
 ], function (
     $,
+    remove,
     forEach,
     forOwn,
     getParam,
@@ -24,10 +26,11 @@ define([
     var tileHeight = tileSize.height;
     
     var TIME_SCALE_FACTOR = 1;
-    var AUTO_PLAY_MUSIC = false;
+    var AUTO_PLAY_MUSIC = true;
     var MAX_TOTAL_NEUTRINO_CANS = 1;
     var MAX_ACTIVE_DOORS = 1;
     var MAX_ACTIVE_TELEPODS = 1;
+    var MAX_ACTIVE_MARBLES = 1;
     var MAX_TELEPODS = 5;
     var TELEPOD_PROBABILITY_DECAY = 1.6;
        
@@ -46,8 +49,8 @@ define([
         var level = opts.level;// || throw new Error("No `level` provided!");
         var paused = opts.paused || false;
         var size = opts.size;// || throw new Error("No `size` provided!");
-        var rows = size.rows;// || throw new Error("Size had no `rows` property!");
-        var cols = size.cols;// || throw new Error("Size had no `cols` property!");
+        var rows = size.rows || 8; // || throw new Error("Size had no `rows` property!");
+        var cols = size.cols || 40; // || throw new Error("Size had no `cols` property!");
         var players = opts.players || [];
         var duration = opts.duration || 100 * 1000;
         var music = new Audio();
@@ -63,6 +66,7 @@ define([
         this._eventEmitter = eventEmitter;
         this._context = context;
         this._board = new GameBoard(context, level, cols, rows);
+        this._level = level;
         this._paused = paused;
         this._gameOver = false;
         this._rows = rows;
@@ -74,6 +78,7 @@ define([
         this._numActiveTelepods = 0;
         this._numTotalNeutrinoCans = 0;
         this._numActiveDoors = 0;
+        this._activeMarbles = [];
         this._gameOverImage = new Image();
         this._gameOverImage.src = ('images/src/game_over.png');
         this._backgroundMusic = music;
@@ -100,9 +105,9 @@ define([
     GameState.prototype.enableTimer = function enableTimer() {
         var scope = this;
         this._interval = setInterval(function() {
-            scope.decrementTime.call(scope, 1000)
+            scope.decrementTime.call(scope, 500)
             scope._intervalLogic.call(scope);
-        }, 1000 / TIME_SCALE_FACTOR);
+        }, 500 / TIME_SCALE_FACTOR);
     };
     
     GameState.prototype.disableTimer = function disableTimer() {
@@ -190,19 +195,25 @@ define([
     };
     
     GameState.prototype.incrementTime = function incrementTime(amount) {
-        var $progressBar = this._$progressBar;
         var percent;
+        var $progressBar = this._$progressBar;
+        var remainingTime = this._remainingTime;
+        var duration = this._duration;
         if(typeof amount === 'undefined') {
             amount = 1000;
         }
-        this._remainingTime += amount;
-        percent = (100 * this._remainingTime / this._duration);
+        remainingTime += amount;
+        if(remainingTime > duration) {
+            remainingTime = duration;
+        }
+        percent = (100 * remainingTime / duration);
         $progressBar.css('width', percent + '%');
         $progressBar.toggleClass('low', percent <= 10).toggleClass('medium', percent > 10 && percent <= 40).toggleClass('high', percent > 40);
         
-        if(this._remainingTime <= 0) {
+        if(remainingTime <= 0) {
             this.endGame();
         }
+        this._remainingTime = remainingTime;
     };
     
     GameState.prototype.endGame = function endGame() { 
@@ -259,14 +270,19 @@ define([
         }
     };
     
+    GameState.prototype._getNewTelepod = function _getNewTelepod(player) {
+        var numTelepods = player.getNumTelepods();
+        ++numTelepods;
+        player.setNumTelepods(numTelepods);
+        this.updateTelepods(numTelepods);
+    };
+    
     GameState.prototype._getNewTelepodIfPossible = function _getNewTelepodIfPossible(player) {
         var numTelepods = player.getNumTelepods();
         if(player.getType() === Player.types.HUMAN) {
             if(numTelepods < MAX_TELEPODS && this._telepodProbability > Math.random()) {
                 this._telepodProbability /= TELEPOD_PROBABILITY_DECAY;
-                ++numTelepods;
-                player.setNumTelepods(numTelepods);
-                this.updateTelepods(numTelepods);
+                this._getNewTelepod(player);
             }
         }
     };
@@ -320,7 +336,9 @@ define([
         var context = this._context;
         var board = this._board;
         var neutrinoCanTypeId = Addon.typeIds.NEUTRINO_CAN;
-        if(this._numTotalNeutrinoCans < MAX_TOTAL_NEUTRINO_CANS) {
+        var neutrinoCanProbability = 1 - (1.1 * this._remainingTime / this._duration);
+        // Create neutrino can if we haven't reached max and if probability allows it
+        if(this._numTotalNeutrinoCans < MAX_TOTAL_NEUTRINO_CANS && neutrinoCanProbability > Math.random()) {
             do {
                 position = board.getRandomPosition();
                 tile = board.getTile(position.x, position.y);
@@ -336,18 +354,119 @@ define([
         return false;
     };
     
+    GameState.prototype._createMarbleIfPossible = function _createMarbleIfPossible() {
+        var marbleType, marbleRandomValue, marble, postion, tile;
+        var level = this._level;
+        var board = this._board;
+        var activeMarbles = this._activeMarbles;
+        var marbleProbability = this._level.marbleProbability;    
+        var marbleTypeCumulativeProbability = level.marbleTypeCumulativeProbability;
+        
+        // Create marble if was haven't reached max number and probability allows it
+        var random = Math.random();
+        if(activeMarbles.length < MAX_ACTIVE_MARBLES && marbleProbability > random) {
+            marbleRandomValue = Math.random();
+            if(marbleRandomValue < marbleTypeCumulativeProbability[Addon.subTypeIds.RED_MARBLE]) {
+                marbleType = Addon.subTypeIds.RED_MARBLE;
+            }
+            else if(marbleRandomValue < marbleTypeCumulativeProbability[Addon.subTypeIds.PURPLE_MARBLE]) {
+                marbleType = Addon.subTypeIds.PURPLE_MARBLE
+            }
+            else if(marbleRandomValue < marbleTypeCumulativeProbability[Addon.subTypeIds.LIGHT_GRAY_MARBLE]) {
+                marbleType = Addon.subTypeIds.LIGHT_GRAY_MARBLE;
+            }
+            else {
+                marbleType = Addon.subTypeIds.DARK_GRAY_MARBLE;
+            }
+            position = board.getRandomPosition();
+            position.x = 0;
+            tile = board.getTile(position.x, position.y);
+            marble = new Addon(this._context, position.x, position.y, Addon.typeIds.MARBLE, marbleType);
+            activeMarbles.push(marble);
+            tile.addAddon(marble);
+        }
+    };
+    
+    GameState.prototype._deleteMarble = function _deleteMarble(marble) {
+        var board = this._board;
+        var activeMarbles = this._activeMarbles;
+        var position = marble.getPosition();
+        var tile = board.getTile(position.x, position.y);
+        tile.removeAddon(marble);
+        remove(activeMarbles, marble);
+        delete marble;
+    };
+    
+    GameState.prototype._updateMarbles = function _updateMarbles() {
+        var position, tile, playerPosition;
+        var scope = this;
+        var board = this._board;
+        var players = this._players;
+        var activeMarbles = this._activeMarbles;
+        forEach(activeMarbles, function(marble) {
+            position = marble.getPosition();
+            tile = board.getTile(position.x, position.y);
+            tile.removeAddon(marble);
+            if(position.x < board.getCols() - 1) { 
+                // Marble still has room to go
+                ++position.x;
+                tile = board.getTile(position.x, position.y); // New tile
+                marble.setPosition(position);
+                tile.addAddon(marble);
+                forEach(players, function(player) {
+                    playerPosition = player.getPosition();
+                    if(playerPosition.x === position.x && playerPosition.y === position.y) {
+                        scope._handleMarble(player, tile, marble);
+                    }
+                });
+            }
+            else {
+                // Marble is at far right of screen
+                scope._deleteMarble(marble);
+            }
+        });
+    };
+        
+    GameState.prototype._handleMarble = function _handleMarble(player, tile, marble) {
+        var marbleType = marble.getSubType();
+        var position = player.getPosition();
+        var duration = this._duration;
+        var board = this._board;
+
+        switch(marbleType) {
+            case Addon.subTypeIds.RED_MARBLE:
+                if(player.getType() === Player.types.HUMAN) {
+                    this.decrementTime(Math.floor(duration * 0.1));
+                }
+                break;
+            case Addon.subTypeIds.PURPLE_MARBLE:
+                if(player.getType() === Player.types.HUMAN) {
+                    this.incrementTime(Math.floor(duration * 0.1));
+                }
+                break;
+            case Addon.subTypeIds.LIGHT_GRAY_MARBLE:
+                this._teleportPlayer(player);
+                break;
+            case Addon.subTypeIds.DARK_GRAY_MARBLE:
+                if(player.getType() === Player.types.HUMAN) {
+                    this._getNewTelepod(player);
+                }
+                break;
+        }
+        this._deleteMarble(marble);
+        return false;
+    };
+    
     GameState.prototype._handleTelepod = function _handleTelepod(player, tile, telepod) {
         var position = player.getPosition();
-        var board = this._board;
 
         if(player.getType() === Player.types.OPPONENT) {
             tile.removeAddon(telepod);
             delete telepod;
             --(this._numActiveTelepods);
-            position = board.getRandomPosition();
-            player.setPosition(position);
+            this._teleportPlayer(player);
             return true;
-        };
+        }
         return false;
     };
     
@@ -363,7 +482,7 @@ define([
             player.setNumNeutrinoCans(numPlayerNeutrinoCans);
             AudioManager.playSound(AudioManager.soundNames.CAN);
             this._createDoorIfPossible(player);
-        };
+        }
         return false;
     };
     
@@ -397,7 +516,7 @@ define([
                    location.href='index.html?level=2';
                 }
             }, 1000);
-        };
+        }
         return false;
     };
     
@@ -408,6 +527,7 @@ define([
             var type = addon.getType();
             switch(type) {
                 case Addon.typeIds.MARBLE:
+                    return scope._handleMarble(player, tile, addon);
                     break;
                 case Addon.typeIds.TELEPOD:
                     return scope._handleTelepod(player, tile, addon)
@@ -471,13 +591,17 @@ define([
             // todo: instead of evaluating right away, mark the player as dirty and evaluate again on the next move, block moves while player is dirty
             this._evaluatePlayerPosition(player, player.getPosition());
         }
-/*
-        this._handleHole(player, tile, position);
-        this._handleSwitch(player, tile, position);
-        this._handleAddons(player, tile, position);
-*/
     };
-    
+
+    GameState.prototype._teleportPlayer = function _teleportPlayer(player, position) {
+        var board = this._board;
+        if(!position) {
+            position = board.getRandomPosition();
+        }
+        player.setPosition(position);
+        this._evaluatePlayerPosition(player, position);
+    };
+        
     GameState.prototype._stand = function _stand(player) {
         var position = player.getPosition();
         position.direction = Player.directions.FORWARD;
@@ -614,11 +738,10 @@ define([
         return false;
     };
     
-    GameState.prototype._intervalLogic = function() {
-        var neutrinoCanProbability = 1 - (1.1 * this._remainingTime / this._duration)
-        if(neutrinoCanProbability > Math.random()) {
-            this._createNeutrinoCanIfPossible();
-        }
+    GameState.prototype._intervalLogic = function _intervalLogic() {
+        this._updateMarbles();
+        this._createNeutrinoCanIfPossible();
+        this._createMarbleIfPossible();
     };
     
     return GameState;
