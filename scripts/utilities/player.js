@@ -1,10 +1,12 @@
 define([
     './movementStrategies/enumerate',
     'utilities/game-tile',
+    'mout/object/keys',
     'mout/lang/clone'
 ], function (
     movementStrategies,
     GameTile,
+    keys,
     clone
 ) { 
     var tileSize = GameTile.getTileSize();
@@ -297,12 +299,13 @@ define([
             throw new Error("Invalid initial position!");
         }
         if(!(PlayerMovementStrategy = movementStrategies[playerMovementStrategyKey])) {
-            throw new Error("Invalid movement strategy, options are: ", movementStategies);
+            throw new Error("Invalid movement strategy, options are: " + keys(movementStrategies).join(', '));
         }
         
         this._id = playerCount;
         this._name = playerName;
-        this._movementStrategy = new PlayerMovementStrategy();
+        this._movementStrategy = new PlayerMovementStrategy(eventEmitter);
+        this._isAlive = true;
         this._position = {
             x: playerInitialPosition.x,
             y: playerInitialPosition.y,
@@ -315,6 +318,7 @@ define([
         this._type = playerType;
         this._eventEmitter = eventEmitter;
         
+        this._movementStrategy.setPlayerId(this._id);
         attachMovementStrategyFunctions.call(this, this._movementStrategy);
         
         playerCount++;
@@ -385,6 +389,17 @@ define([
         this._eventEmitter.emit('playerMoveRequest', moveDetails);
     };
     
+    Player.prototype.die = function die() {
+        console.log(this._name + " died!");
+        this._isAlive = false;
+        var moveDetails = {
+            player: this._id,
+            move: Player.moves.STAND
+        }
+        
+        this._eventEmitter.emit('playerMoveRequest', moveDetails);
+    };
+    
     Player.prototype.getId = function getId() {
         return this._id;
     };
@@ -435,6 +450,10 @@ define([
     
     Player.prototype.setPosition = function getName(position) {
         this._position = position;
+    };
+    
+    Player.prototype.getIsAlive = function getIsAlive() {
+        return this._isAlive;
     };
     
     /**

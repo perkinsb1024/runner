@@ -1,10 +1,9 @@
-// to do: BUG! Jump and land on a hole, you fall two levels!
 // to do: BUG! Jump over a switch or addon, it does not activate
-
 
 require([
     'jquery',
     'eventemitter2',
+    'mout/array/forEach',
     'mout/queryString/getParam',
     'utilities/game-state',
     'utilities/player',
@@ -14,6 +13,7 @@ require([
 ], function(
     $,
     EventEmitter2,
+    forEach,
     getParam,
     GameState,
     Player,
@@ -21,7 +21,7 @@ require([
     level2,
     level3
 ) {
-    var DEBUG = false;
+    var DEBUG = true;
     var STARTING_TELEPODS = 0;
     var STARTING_EXTRA_LIVES = 3;
     
@@ -36,6 +36,7 @@ require([
     var eventEmitter = new EventEmitter2();
     var level = level1;
     var game;
+    
     
     if(getParam(url, 'level') == 2) {
        level = level2; 
@@ -59,10 +60,12 @@ require([
     });
     
     if(DEBUG) {
+        window.eventEmitter = eventEmitter;
+        window.Player = Player;
         $(canvas).on('click', function(event) {
             var x = Math.floor((event.pageX - $(this).position().left) / 16);
             var y = Math.floor((event.pageY - $(this).position().top) / 48);
-            var player = game._players[0];
+            var player = game._players[1];
             var position = {
                 x: x,
                 y: y
@@ -84,6 +87,17 @@ require([
         numExtraLives: STARTING_EXTRA_LIVES,
         numTelepods: STARTING_TELEPODS
     });
+    
+    forEach(level.opponents, function(opponentInfo, index) {
+        game.addPlayer({
+            name: 'Opponent ' + (index + 1),
+            eventEmitter: eventEmitter,
+            movementStrategy: 'AI',
+            initialPosition: opponentInfo.position,
+            type: Player.types.OPPONENT
+        });
+    });
+    
     game.updateTelepods(STARTING_TELEPODS);
     game.updateExtraLives(STARTING_EXTRA_LIVES);
     

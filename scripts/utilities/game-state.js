@@ -26,7 +26,7 @@ define([
     var tileHeight = tileSize.height;
     
     var TIME_SCALE_FACTOR = 1;
-    var AUTO_PLAY_MUSIC = true;
+    var AUTO_PLAY_MUSIC = false;
     var MAX_TOTAL_NEUTRINO_CANS = 1;
     var MAX_ACTIVE_DOORS = 1;
     var MAX_ACTIVE_TELEPODS = 1;
@@ -69,8 +69,6 @@ define([
         this._level = level;
         this._paused = paused;
         this._gameOver = false;
-        this._rows = rows;
-        this._cols = cols;
         this._players = players;
         this._duration = duration;
         this._remainingTime = duration;
@@ -95,13 +93,13 @@ define([
         eventEmitter.on('playerMoveRequest', function(event) {
             scope._processMove.call(scope, event);
         });
+        eventEmitter.on('aiInfoRequest', function(event) {
+            scope._getAiInfo.call(scope, event);
+        });
         
         this.enableTimer();
     }
     
-    /**
-     * Render the game
-     */
     GameState.prototype.enableTimer = function enableTimer() {
         var scope = this;
         this._interval = setInterval(function() {
@@ -114,12 +112,17 @@ define([
         clearInterval(this._interval);
     };
     
+    /**
+     * Render the game
+     */
     GameState.prototype.render = function render() {
         var scope = this;
-        this._board.render();
-        forEach(this._players, function(player) {
-            player.render(scope._context);
-        });
+        if(!this._gameOver) {
+            this._board.render();
+            forEach(this._players, function(player) {
+                player.render(scope._context);
+            });
+        }
     };
     
     GameState.prototype.pause = function pause() {
@@ -196,6 +199,7 @@ define([
     
     GameState.prototype.incrementTime = function incrementTime(amount) {
         var percent;
+        var scope = this;
         var $progressBar = this._$progressBar;
         var remainingTime = this._remainingTime;
         var duration = this._duration;
@@ -211,9 +215,30 @@ define([
         $progressBar.toggleClass('low', percent <= 10).toggleClass('medium', percent > 10 && percent <= 40).toggleClass('high', percent > 40);
         
         if(remainingTime <= 0) {
-            this.endGame();
+            forEach(this._players, function(player) {
+                if(player.getType() === Player.types.HUMAN) {
+                    scope.loseLife(player);
+                };
+            });
         }
         this._remainingTime = remainingTime;
+    };
+    
+    GameState.prototype.loseLife = function loseLife(player) {
+        var lives = player.getNumExtraLives();
+        
+        if(player.getType() === Player.types.HUMAN) {
+            --lives;
+            player.setNumExtraLives(lives);
+            this.updateExtraLives(lives);
+            if(lives === 0) {
+                this.endGame();
+            }
+            else {
+                // to do: Reset level instead of ending game
+                this.endGame();
+            }
+        }
     };
     
     GameState.prototype.endGame = function endGame() { 
@@ -226,6 +251,7 @@ define([
             this._canvas.width / 2 - image.width / 2,
             this._canvas.height / 2 - image.height / 2
         );
+        this._eventEmitter.emit('renderRequest');
     };
     
     /**
@@ -240,9 +266,8 @@ define([
     GameState.prototype._processMove = function _processMove(event) {
         var playerId = event.player;
         var player = this._players[playerId];
-        var position = player.getPosition();
         var move = event.move;
-        if(this._paused) {
+        if(this._paused || !player) {
             return;
         }
         switch(move) {
@@ -267,6 +292,64 @@ define([
             case Player.moves.DROP:
                 this._drop(player);
                 break;
+        }
+    };
+    
+    GameState.prototype._getAiInfo = function _getAiInfo(event) {
+        var position, info;
+        var scope = this;
+        var playerId = event.player;
+        var player = this._players[playerId];
+        var board = this._board;
+        
+        var distanceBetween = function distanceBetween(a, b) {
+            return Math.sqrt(Math.abs(a.x - b.x) + Math.abs(a.y - b.y));
+        };
+        
+        var getNearestHuman = function getNearestHuman(position) {
+            var closest = null;
+            var nearestHuman = null;
+            forEach(scope._players, function(player) {
+                var distance;
+                if(player.getIsAlive() && player.getType() === Player.types.HUMAN) {
+                    distance = distanceBetween(player.getPosition, position);
+                    if(!nearestHuman || (distance < closest)) {
+                        closest = distance;
+                        nearestHuman = player.getPosition();
+                    }
+                }
+            });
+            return nearestHuman;
+        };
+        
+        var getLaddersOnRow = function getLaddersOnRow(row) {
+            var tile;
+            var ladders = [];
+            if(row < board.getRows()) {
+                for(var col = 0; col < board.getCols(); col++) {
+                    tile = board.getTile(col, row);
+                    if(tile.getType() === GameTile.typeIds.LADDER) {
+                        ladders.push({
+                            x: col,
+                            y: row
+                        });
+                    }
+                }
+            }
+                        
+            return ladders;
+        };
+        
+        if(player) {
+            position = player.getPosition();
+            info = {
+                position: position,
+                nearestHuman: getNearestHuman(position),
+                laddersOnThisRow: getLaddersOnRow(position.y),
+                laddersOnLowerRow: getLaddersOnRow(position.y + 1)
+            };
+            
+            this._eventEmitter.emit('aiInfo', info);
         }
     };
     
@@ -511,6 +594,7 @@ define([
                 else if(getParam(url, 'level') == 3) {
                    console.log('You win!');
                    scope.endGame();
+                   return true;
                 }
                 else {
                    location.href='index.html?level=2';
@@ -559,6 +643,35 @@ define([
         return false;
     };
     
+    GameState.prototype._handleOpponent = function _handleOpponent(player, tile, position) {
+        var playerType = player.getType();
+        var otherType = (playerType === Player.types.HUMAN ? Player.types.OPPONENT : Player.types.HUMAN);
+        var playerWhoDied = null;
+        forEach(this._players, function(tempPlayer) {
+            var tempPosition = tempPlayer.getPosition();
+            if(tempPlayer.getType() === otherType) {
+                if(tempPosition.x === position.x && tempPosition.y === position.y) {
+                    if(playerType === Player.types.HUMAN) {
+                        player.die();
+                        playerWhoDied = player;
+                        // Break out of loop
+                        return false;
+                    }
+                    else {
+                        tempPlayer.die();
+                        playerWhoDied = tempPlayer;
+                        // Break out of loop (to do: if there are ever multiple humans, this logic will need to change)
+                        return false;
+                    }
+                }
+            }
+        });
+        if(!!playerWhoDied) {
+            this.loseLife(playerWhoDied);
+        }
+        return false;
+    };
+    
     GameState.prototype._handleHole = function _handleHole(player, tile, position) {
         var board = this._board;
         if(tile.getType() === GameTile.typeIds.HOLE && position.y < board.getRows() - 1) {
@@ -576,7 +689,7 @@ define([
         // Instead of taking tile as a parameter, get it based on the new position since
             // position could have changed since we last retrieved tile
         var scope = this;
-        var functions = [this._handleSwitch, this._handleAddons, this._handleHole];
+        var functions = [this._handleOpponent, this._handleSwitch, this._handleAddons, this._handleHole];
         var tile = this._board.getTile(position.x, position.y);
         var positionDidChange = false;
         forEach(functions, function(fn) {

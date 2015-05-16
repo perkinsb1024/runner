@@ -5,7 +5,10 @@ define([
     keyCodes,
     KeysMovementStrategy
 ) {
-    var ArrowKeysMovementStrategy = function ArrowKeysMovementStrategy() { };
+    var ArrowKeysMovementStrategy = function ArrowKeysMovementStrategy() { 
+        var callbacks = {};
+        this.setCallbackObject(callbacks);
+    };
     ArrowKeysMovementStrategy.prototype = new KeysMovementStrategy({
         left: [keyCodes.LEFT_ARROW],
         right: [keyCodes.RIGHT_ARROW],

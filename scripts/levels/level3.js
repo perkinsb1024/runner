@@ -31,6 +31,14 @@ define([
             2: 0.85, // Dark gray
             3: 1, // Light gray
         },
+        "opponents": [
+            {
+                "position": {
+                    "x": 38,
+                    "y": 0
+                }
+            }
+        ],
         "music": "audio/music/level03.mp3",
         "map": [
             _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,u,u,_,_,_,_,u,_,_,_,_,_,_,

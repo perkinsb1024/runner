@@ -1,15 +1,15 @@
 define([
     'mout/object/keys',
-    './arrow-keys'
+    './arrow-keys',
+    './artificial-intelligence'
 ], function (
     keys,
-    ArrowKeysMovementStrategy
+    ArrowKeysMovementStrategy,
+    ArtificialIntelligenceMovementStrategy
 ) {
     var MovementStrategies = {
-        ARROW_KEYS: ArrowKeysMovementStrategy
+        ARROW_KEYS: ArrowKeysMovementStrategy,
+        AI: ArtificialIntelligenceMovementStrategy
     };
-    MovementStrategies.toString = function() {
-        return keys(this);
-    }
     return MovementStrategies;
 });

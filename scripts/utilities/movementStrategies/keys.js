@@ -23,13 +23,13 @@ define([
     some,
     MovementStrategy
 ) {
-    var $window = $(window);
-    var keyCheck = 250; // mS    
-
-    // todo: on('keydown') repeats, not just fired once. Restructure to allow blocking of repeated keydowns between keyups
+    
+    // To do: Convert this to a pure virtual function (object instead of function)
     
     var KeysMovementStrategy = function KeysMovementStrategy(keyCodes) {
         var scope = this;
+        var $window = $(window);
+        var keyCheck = 250; // mS    
         this._keyCodes = keyCodes;
         this._validKeys = union.apply(this, values(this._keyCodes));
         
