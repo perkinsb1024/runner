@@ -26,7 +26,7 @@ define([
     var tileHeight = tileSize.height;
     
     var TIME_SCALE_FACTOR = 1;
-    var AUTO_PLAY_MUSIC = false;
+    var AUTO_PLAY_MUSIC = true;
     var MAX_TOTAL_NEUTRINO_CANS = 1;
     var MAX_ACTIVE_DOORS = 1;
     var MAX_ACTIVE_TELEPODS = 1;
