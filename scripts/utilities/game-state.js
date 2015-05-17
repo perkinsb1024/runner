@@ -354,6 +354,7 @@ define([
         if(player) {
             position = player.getPosition();
             info = {
+                player: playerId,
                 position: position,
                 nearestHuman: getNearestHuman(position),
                 laddersOnThisRow: getLaddersOnRow(position.y),

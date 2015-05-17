@@ -292,18 +292,23 @@ define([
         var PlayerMovementStrategy;
         var playerInitialPosition;
         var playerType;
+        var playerIntelligence;
+        var movementStrategy;
         var eventEmitter;
+        var id;
         
         if(opts instanceof Player) {
             return Player;
         }
         
+        id = playerCount;
         playerName = opts.name ;//|| throw new Error("No `playerName` provided!");
         playerMovementStrategyKey = opts.movementStrategy;// || throw new Error("No `playerMovementStrategy` provided!");
         playerInitialPosition = opts.initialPosition;// || throw new Error("No `playerInitialPosition` provided!");
         playerType = opts.type;// || throw new Error("No `playerType` provided!");
         playerNumExtraLives = opts.numExtraLives || 0;
         playerNumTelepods = opts.numTelepods || 0;
+        playerIntelligence = opts.intelligence || 0;
         eventEmitter = opts.eventEmitter; // || throw new Error("No `eventEmitter` provided!");
         if(!(playerInitialPosition.hasOwnProperty('x') && playerInitialPosition.hasOwnProperty('y'))) {
             throw new Error("Invalid initial position!");
@@ -311,10 +316,11 @@ define([
         if(!(PlayerMovementStrategy = movementStrategies[playerMovementStrategyKey])) {
             throw new Error("Invalid movement strategy, options are: " + keys(movementStrategies).join(', '));
         }
+        movementStrategy = new PlayerMovementStrategy(eventEmitter);
         
-        this._id = playerCount;
+        this._id = id;
         this._name = playerName;
-        this._movementStrategy = new PlayerMovementStrategy(eventEmitter);
+        this._movementStrategy = movementStrategy;
         this._isAlive = true;
         this._position = {
             x: playerInitialPosition.x,
@@ -326,9 +332,11 @@ define([
         this._numNeutrinoCans = 0;
         this._numExtraLives = playerNumExtraLives;
         this._type = playerType;
+        this._intelligence = playerIntelligence;
         this._eventEmitter = eventEmitter;
         
-        this._movementStrategy.setPlayerId(this._id);
+        movementStrategy.setPlayerId && movementStrategy.setPlayerId(id);
+        movementStrategy.setPlayerIntelligence && movementStrategy.setPlayerIntelligence(playerIntelligence);
         attachMovementStrategyFunctions.call(this, this._movementStrategy);
         
         playerCount++;

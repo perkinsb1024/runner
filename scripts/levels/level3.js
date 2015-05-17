@@ -37,6 +37,13 @@ define([
                     "x": 38,
                     "y": 0
                 }
+            },
+            {
+                "position": {
+                    "x": 37,
+                    "y": 2
+                },
+                "intelligence": 40
             }
         ],
         "music": "audio/music/level03.mp3",

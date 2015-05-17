@@ -8,7 +8,8 @@ define([
     'mout/array/insert',
     'mout/array/remove',
     'mout/object/values',
-    'mout/object/some'
+    'mout/object/some',
+    './main'
 ], function (
     $,
     forEach,
@@ -19,77 +20,16 @@ define([
     insert,
     remove,
     values,
-    some
-) { 
+    some,
+    MovementStrategy
+) {  
+    
     var ArtificialIntelligenceMovementStrategy = function ArtificialIntelligenceMovementStrategy(eventEmitter) {
         var scope = this;
         var moveInterval = 250; // mS
         var callbacks = {};
+        this.setCallbackObject(callbacks);
         this.eventEmitter = eventEmitter;
-        
-        this.stand = function stand() {
-            callbacks.stand && callbacks.stand.call(this);
-        };
-        this.moveLeft = function moveLeft() {
-            callbacks.left && callbacks.left.call(this);
-        };
-        this.moveRight = function moveRight() {
-            callbacks.right && callbacks.right.call(this);
-        };
-        this.climbUp = function climbUp() {
-            callbacks.climbUp && callbacks.climbUp.call(this);
-        };
-        this.climbDown = function climbDown() {
-            callbacks.climbDown && callbacks.climbDown.call(this);
-        };
-        this.jump = function jump() {
-            callbacks.jump && callbacks.jump.call(this);
-        };
-        this.drop = function drop() {
-            callbacks.drop && callbacks.drop.call(this);
-        };
-        
-        this.setPlayerId = function setPlayerId(id) {
-            this._playerId = id;
-        };
-        this.setPlayerIntelligence = function setPlayerIntelligence(intelligence) {
-            this._intelligence = intelligence;
-        };
-        this.setStand = function setStand(player, cb) {
-            callbacks.stand = function() {
-                cb.call(player);
-            }
-        };
-        this.setMoveLeft = function setMoveLeft(player, cb) {
-            callbacks.left = function() {
-                cb.call(player);
-            }
-        };
-        this.setMoveRight = function setMoveRight(player, cb) {
-            callbacks.right = function() {
-                cb.call(player);
-            };
-        };
-        this.setClimbUp = function setClimbUp(player, cb) {
-            callbacks.climbUp = function() {
-                cb.call(player);
-            };
-        };
-        this.setClimbDown = function setClimbDown(player, cb) {
-            callbacks.climbDown = function() {
-                cb.call(player);
-            };
-        };
-        this.setJump = function setJump(player, cb) {
-            callbacks.jump = function() {
-                cb.call(player);
-            };
-        };
-        this.setDrop = function setDrop(player, cb) {
-            callbacks.drop = function() {
-                cb.call(player);
-            };
-        }
         
         eventEmitter.on('aiInfo', function(event) {
             scope._move.call(scope, event);
@@ -99,6 +39,9 @@ define([
             scope._requestInfo.call(scope);
         }, moveInterval);
     };
+    
+    ArtificialIntelligenceMovementStrategy.prototype = new MovementStrategy();
+    ArtificialIntelligenceMovementStrategy.prototype.constructor = ArtificialIntelligenceMovementStrategy;
     
     ArtificialIntelligenceMovementStrategy.prototype._requestInfo = function _requestInfo() {
         var scope = this;
@@ -118,7 +61,7 @@ define([
         var laddersOnThisRow = event.laddersOnThisRow;
         var laddersOnLowerRow = event.laddersOnLowerRow;
         var madeMove = false;
-                
+        
         var getNearestLadder = function getNearestLadder(ladders, position, preferLeft) {
             var nearestPreferredDistance = null;
             var nearestPreferredLadder = null;
@@ -151,7 +94,7 @@ define([
         if(this._playerId != event.player) {
             return;
         }
-                
+        
         if(!target) {
             // No living humans
             return this.stand();
@@ -173,7 +116,7 @@ define([
             // Use laders beneath you to move down or ladders on your row to move up
             ladders = (position.y < target.y) ? laddersOnLowerRow : laddersOnThisRow;
             // Prefer running toward a ladder in the opposite direction of your target
-            preferLeft = (position.x < target.x + this._intelligence);
+            preferLeft = (position.x < target.x);
             nearestLadder = getNearestLadder(ladders, position, preferLeft);
             if(position.x < nearestLadder.x) {
                 return this.moveRight();
