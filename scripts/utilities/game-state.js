@@ -133,7 +133,7 @@ define([
     };
     
     GameState.prototype.resume = function resume() {
-        if(!this._gameOver) {
+        if(!this._gameOver && this._paused) {
             this.enableTimer();
             this._paused = false;
             if(this._musicWasPlaying) {
@@ -174,6 +174,14 @@ define([
             // Even if the game was paused, pause the music, just in case
             music.pause();
         }
+    };
+    
+    GameState.prototype.muteSoundEffects = function muteSoundEffects() {
+        AudioManager.muteSoundEffects();
+    };
+    
+    GameState.prototype.unmuteSoundEffects = function unmuteSoundEffects() {
+        AudioManager.unmuteSoundEffects();
     };
     
     GameState.prototype.updateTelepods = function updateTelepod(numTelepods) {
@@ -291,6 +299,9 @@ define([
                 break;
             case Player.moves.DROP:
                 this._drop(player);
+                break;
+            case Player.moves.DIE:
+                this._die(player);
                 break;
         }
     };
@@ -712,6 +723,7 @@ define([
             position = board.getRandomPosition();
         }
         player.setPosition(position);
+        AudioManager.playSound(AudioManager.soundNames.TELEPORT);
         this._evaluatePlayerPosition(player, position);
     };
         
@@ -811,6 +823,19 @@ define([
         }
         
         this._evaluatePlayerPosition(player, position);
+        this._eventEmitter.emit('renderRequest');
+    };
+    
+    GameState.prototype._die = function _die(player) {
+        var position = player.getPosition();
+        var board = this._board;
+        
+        position.posture = Player.postures.DEAD;
+	    position.direction = Player.directions.FORWARD;
+        position.y = board.getRows() - 1;
+        player.setPosition(position);
+        
+        AudioManager.playSound(AudioManager.soundNames.DIE);
         this._eventEmitter.emit('renderRequest');
     };
     

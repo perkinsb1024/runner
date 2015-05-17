@@ -198,6 +198,13 @@ define([
                     return image;
                 })()
             ],
+            "HUMAN_DEAD": [
+                (function() {
+                    var image = new Image();
+                    image.src = (imageDir + 'dead_yellow.png');;
+                    return image;
+                })()
+            ],
             "OPPONENT_GONE": [
                 (function() {
                     var image = new Image();
@@ -240,6 +247,9 @@ define([
         }
         else if(posture === Player.postures.FALL) {
             imageKey += '_FALL';
+        }
+        else if(posture === Player.postures.DEAD) {
+            imageKey += '_DEAD';
         }
 
         else if(posture === Player.postures.GONE) {
@@ -394,7 +404,7 @@ define([
         this._isAlive = false;
         var moveDetails = {
             player: this._id,
-            move: Player.moves.STAND
+            move: Player.moves.DIE
         }
         
         this._eventEmitter.emit('playerMoveRequest', moveDetails);
@@ -484,7 +494,8 @@ define([
         CLIMB_UP: 3,
         CLIMB_DOWN: 4,
         JUMP: 5,
-        DROP: 6
+        DROP: 6,
+        DIE: 7
     };
     Player.postures = {
         STAND: 0,
@@ -492,7 +503,8 @@ define([
         CLIMB: 2,
         JUMP: 3,
         FALL: 4,
-        GONE: 5
+        DEAD: 5,
+        GONE: 6
     };
     
     return Player;

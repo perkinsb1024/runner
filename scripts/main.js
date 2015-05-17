@@ -25,18 +25,85 @@ require([
     var STARTING_TELEPODS = 0;
     var STARTING_EXTRA_LIVES = 3;
     
+    var game, $activeMenu;
     var scope = this;
     var url = document.location.href;
-    var canvas = $('#runner')[0];
+    var $html = $('html');
+    var $activeArea = $('.window div:not(.menuBar)')
+    var $inactiveArea = $('html,.menuBar')
+    var $window = $('.window');
+    var $gameContainer = $('.gameContainer');
+    var $canvas = $('#runner');
     var $playPauseMusic = $('.playPauseMusic');
     var $playPauseGame = $('.playPauseGame');
     var $progressFill = $('.progressBar .fill');
     var $extraLives = $('.extraLives');
     var $telepods = $('.telepods');
+    var canvas = $canvas[0];
     var eventEmitter = new EventEmitter2();
     var level = level1;
-    var game;
     
+    var processMenuItem = function processMenuItem($target) {
+        var checked;
+        var menuItem = $target.data('menu-item');
+        switch(menuItem) {
+            case 'sound':
+                $target.toggleClass('checked');
+                if($target.hasClass('checked')) {
+                    game.unmuteSoundEffects();
+                }
+                else {
+                    game.muteSoundEffects();
+                }
+                break;
+            case 'music':
+                $target.toggleClass('checked');
+                if($target.hasClass('checked')) {
+                    game.playMusic();
+                }
+                else {
+                    game.pauseMusic();
+                }
+                break;
+        }
+    };
+    
+    var processUiClick = function processUiClick(event) {
+        var $menu;
+        var $target = $(event.target);
+        if($target.closest('.window').length) {
+            // Clicked somewhere in the virtual window
+            $window.removeClass('inactive');
+            $menu = $target.closest('.menuBar')
+            if($menu.length) {
+                // Clicked somewhere on the virtual menu bar
+                game.pause();
+                if($target.is('.menu li')) {
+                    processMenuItem($target);
+                }
+                /*
+                // To do: Disable menu after clicking again
+                // This solution sort of works, but is a little glithy
+                if($activeMenu) {
+                    $activeMenu.blur();
+                    $activeMenu = null;
+                }
+                else {
+                    $activeMenu = $menu.find(':focus');
+                }
+                */
+            }
+            else {
+                game.resume();
+            }
+        }
+        else {
+            $window.addClass('inactive');
+            game.pause();
+        }
+    };
+    
+    $html.on('click', processUiClick);
     
     if(getParam(url, 'level') == 2) {
        level = level2; 
@@ -60,20 +127,21 @@ require([
     });
     
     if(DEBUG) {
+        window.game = game;
         window.eventEmitter = eventEmitter;
         window.Player = Player;
         $(canvas).on('click', function(event) {
             var x = Math.floor((event.pageX - $(this).position().left) / 16);
             var y = Math.floor((event.pageY - $(this).position().top) / 48);
-            var player = game._players[1];
+            var player = game._players[0];
             var position = {
                 x: x,
                 y: y
             }
-            game._teleportPlayer(player, position);
+            player.setPosition(position);
             game._evaluatePlayerPosition(player, position);
         });
-    }
+    }    
     
     game.addPlayer({
         name: 'Player 1',
@@ -108,29 +176,4 @@ require([
     setTimeout(function() {
         game.render();
     }, 250);
-    
-    $playPauseMusic.on('click', function() {
-        if($playPauseMusic.text() === "Music: Off") {
-            $playPauseMusic.text("Music: On");
-            game.playMusic();
-        } else {
-            $playPauseMusic.text("Music: Off");
-            game.pauseMusic();
-        }
-        return false;
-    });
-    
-    $playPauseGame.on('click', function() {
-        if($playPauseGame.text() === "Resume game") {
-            $playPauseGame.text("Pause game");
-            game.resume();
-        } else {
-            $playPauseGame.text("Resume game");
-            game.pause();
-        }
-        return false;
-    });
-    
-    // Debugging
-    window.game = game;
 });

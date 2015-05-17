@@ -17,33 +17,36 @@ define([
     
     var AudioManager = {};
     
-    AudioManager._muted = false;
+    // To do: Put background music in here
+    AudioManager._isMuted = {
+        soundEffects: false
+    };
         
     AudioManager.playSound = function playSound(soundName) {
         var sound = this._sounds[soundName];
-        if(sound) {
+        if(!this._isMuted.soundEffects && sound) {
             sound.pause();
             sound.currentTime = 0;
             sound.play();
         };
     }
     
-    AudioManager.mute = function mute() {
-        this._muted = true;
-    }
+    AudioManager.muteSoundEffects = function muteSoundEffects() {
+        this._isMuted.soundEffects = true;
+    };
     
-    AudioManager.unmute = function unmute() {
-        this._muted = false;
-    }
+    AudioManager.unmuteSoundEffects = function unmuteSoundEffects() {
+        this._isMuted.soundEffects = false;
+    };
     
-    AudioManager.isMuted = function isMuted() {
-        return this._muted;
+    AudioManager.getIsMuted = function isMuted() {
+        return this._isMuted;
     }
 
     AudioManager.soundNames = {
         JUMP: 0,
         DROP: 1,
-        FALL: 2,
+        DIE: 2,
         TELEPORT: 3,
         CAN: 4,
         SWITCH_ON: 5,
@@ -53,7 +56,7 @@ define([
     AudioManager._sounds = {};
     AudioManager._sounds[AudioManager.soundNames.JUMP] = newSoundEffect('audio/effects/jump.mp3');
     AudioManager._sounds[AudioManager.soundNames.DROP] = newSoundEffect('audio/effects/drop.mp3');
-    AudioManager._sounds[AudioManager.soundNames.FALL] = newSoundEffect('audio/effects/fall.mp3');
+    AudioManager._sounds[AudioManager.soundNames.DIE] = newSoundEffect('audio/effects/die.mp3');
     AudioManager._sounds[AudioManager.soundNames.TELEPORT] = newSoundEffect('audio/effects/teleport.mp3');
     AudioManager._sounds[AudioManager.soundNames.CAN] = newSoundEffect('audio/effects/can.mp3');
     AudioManager._sounds[AudioManager.soundNames.SWITCH_ON] = newSoundEffect('audio/effects/switch_on.mp3');

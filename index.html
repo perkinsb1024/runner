@@ -8,16 +8,56 @@
         <script src="scripts/config.js"></script>
     </head>
     <body>
-        <div><a href="#" class="playPauseMusic">Music: On</a> - <a href="#" class="playPauseGame">Pause game</a></div>
-        <div class="gameWindow">
-            <canvas id="runner" class="game"></canvas>
-            <div class="stats">
-                <div class="progressBar">
-                    <div class="fill high"></div>
+        <div class="window">
+            <div class="titleBar">
+                <div>
+                    <img src="images/src/icon.png" /> 
                 </div>
-                <div class="extraLives"></div>
-                <div class="telepods"></div>
-                <div class="logo"></div>
+                <div class="text">
+                    Runner - Level 1
+                </div>                               
+            </div>
+            <div class="menuBar">
+                <ul>
+                    <li tabindex="1">
+                        File
+                        <div class="menu">
+                            <ul>
+                                <li data-menu-item="restart">Restart</li>
+                                <li data-menu-item="exit">Exit</li>
+                            </ul>
+                        </div>
+                    </li>
+                    <li tabindex="2">
+                        Options
+                        <div class="menu">
+                            <ul>
+                                <li data-menu-item="sound" class="checked">Sound</li>
+                                <li data-menu-item="music" class="checked">Music</li>
+                            </ul>
+                        </div>
+                    </li>
+                    <li tabindex="3">
+                        Help
+                        <div class="menu">
+                            <ul>
+                                <li data-menu-item="about">About</li>
+                                <li data-menu-item="how">How to play</li>
+                            </ul>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            <div class="gameContainer">
+                <canvas id="runner" class="game"></canvas>
+                <div class="stats">
+                    <div class="progressBar">
+                        <div class="fill high"></div>
+                    </div>
+                    <div class="extraLives"></div>
+                    <div class="telepods"></div>
+                    <div class="logo"></div>
+                </div>
             </div>
         </div>
     </body>
