@@ -21,7 +21,7 @@ require([
     level2,
     level3
 ) {
-    var DEBUG = true;
+    var DEBUG = false;
     var STARTING_TELEPODS = 0;
     var STARTING_EXTRA_LIVES = 3;
     
@@ -43,7 +43,7 @@ require([
     var eventEmitter = new EventEmitter2();
     var level = level1;
     
-    var processMenuItem = function processMenuItem($target) {
+    var processMenuItem = function processMenuItem($target, $menuItem) {
         var checked;
         var menuItem = $target.data('menu-item');
         switch(menuItem) {
@@ -65,21 +65,24 @@ require([
                     game.pauseMusic();
                 }
                 break;
+            default:
+                $menuItem.blur();
+                break;
         }
     };
     
     var processUiClick = function processUiClick(event) {
-        var $menu;
+        var $menuItem;
         var $target = $(event.target);
         if($target.closest('.window').length) {
             // Clicked somewhere in the virtual window
             $window.removeClass('inactive');
-            $menu = $target.closest('.menuBar')
-            if($menu.length) {
+            $menuItem = $target.closest('.menuBar li:focus')
+            if($menuItem.length) {
                 // Clicked somewhere on the virtual menu bar
                 game.pause();
                 if($target.is('.menu li')) {
-                    processMenuItem($target);
+                    processMenuItem($target, $menuItem);
                 }
                 /*
                 // To do: Disable menu after clicking again

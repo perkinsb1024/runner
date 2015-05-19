@@ -25,8 +25,8 @@ define([
         "marbleTypeCumulativeProbability": { 
             0: 0.05, // Red
             1: 0.8, // Purple
-            2: 0.9, // Dark gray
-            3: 1, // Light gray
+            2: 0.9, // Light gray
+            3: 1, // Dark gray
         },
         "opponents": [
             {

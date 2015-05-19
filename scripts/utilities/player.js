@@ -251,7 +251,6 @@ define([
         else if(posture === Player.postures.DEAD) {
             imageKey += '_DEAD';
         }
-
         else if(posture === Player.postures.GONE) {
             imageKey += '_GONE';
         }

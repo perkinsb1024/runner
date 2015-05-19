@@ -101,12 +101,12 @@ define([
                 })(),
                 2: (function() { // Light gray marble
                     var image = new Image();
-                    image.src = imageDir + 'marble_dark_gray.png';
+                    image.src = imageDir + 'marble_light_gray.png';
                     return image;
                 })(),
                 3: (function() { // Dark gray marble
                     var image = new Image();
-                    image.src = imageDir + 'marble_light_gray.png';
+                    image.src = imageDir + 'marble_dark_gray.png';
                     return image;
                 })(),
             },

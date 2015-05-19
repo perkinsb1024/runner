@@ -125,21 +125,23 @@ define([
         }
     };
     
-    GameState.prototype.pause = function pause() {
-        this.disableTimer();
-        this._musicWasPlaying = this.isMusicPlaying();
-        this.pauseMusic();
-        this._paused = true;
-    };
-    
     GameState.prototype.resume = function resume() {
         if(!this._gameOver && this._paused) {
             this.enableTimer();
             this._paused = false;
             if(this._musicWasPlaying) {
                 this.playMusic();
-                delete this._musicWasPlaying;
+                this._musicWasPlaying = false;
             }
+        }
+    };
+    
+    GameState.prototype.pause = function pause() {
+        if(!this._paused) {
+            this.disableTimer();
+            this._musicWasPlaying = this.isMusicPlaying();
+            this.pauseMusic();
+            this._paused = true;
         }
     };
     
@@ -169,7 +171,7 @@ define([
         if(music) {
             if(this._paused) {
                 // Game paused, so erase flag that music should resume when game resumes
-                delete this._musicWasPlaying;
+                this._musicWasPlaying = false;
             }
             // Even if the game was paused, pause the music, just in case
             music.pause();
@@ -423,6 +425,9 @@ define([
         board.destroyDoor();
         --(this._numActiveDoors);
         
+        // Recursively check if there are any more doors to destroy
+        this._destroyDoorIfPossible(player); 
+        
         return true;
     };
     
@@ -540,12 +545,12 @@ define([
                 }
                 break;
             case Addon.subTypeIds.LIGHT_GRAY_MARBLE:
-                this._teleportPlayer(player);
-                break;
-            case Addon.subTypeIds.DARK_GRAY_MARBLE:
                 if(player.getType() === Player.types.HUMAN) {
                     this._getNewTelepod(player);
                 }
+                break;
+            case Addon.subTypeIds.DARK_GRAY_MARBLE:
+                this._teleportPlayer(player);
                 break;
         }
         this._deleteMarble(marble);
@@ -557,7 +562,7 @@ define([
 
         if(player.getType() === Player.types.OPPONENT) {
             tile.removeAddon(telepod);
-            delete telepod;
+            telepod = null;
             --(this._numActiveTelepods);
             this._teleportPlayer(player);
             return true;
@@ -573,7 +578,7 @@ define([
         if(player.getType() === Player.types.HUMAN) {
             ++numPlayerNeutrinoCans;
             tile.removeAddon(neutrinoCan);
-            delete neutrinoCan;
+            neutrinoCan = null;
             player.setNumNeutrinoCans(numPlayerNeutrinoCans);
             AudioManager.playSound(AudioManager.soundNames.CAN);
             this._createDoorIfPossible(player);
@@ -841,6 +846,7 @@ define([
     };
     
     GameState.prototype._drop = function _drop(player) {
+        console.log("GameState::_drop");
         var numTelepods = player.getNumTelepods();
         var position = player.getPosition();
         if(numTelepods > 0 && this._numActiveTelepods < MAX_ACTIVE_TELEPODS) {
@@ -864,6 +870,7 @@ define([
         var tile = this._board.getTile(col, row);
         var addons = tile.getAddons();
         var shouldAdd = true;
+        console.log("GameState::_createTelepod");
         forOwn(addons, function(addon) {
             if(addon.getType === Addon.typeIds.TELEPOD) {
                 shouldAdd = false;
