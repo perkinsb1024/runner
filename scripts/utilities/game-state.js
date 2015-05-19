@@ -2,6 +2,7 @@ define([
     'jquery',
     'mout/array/remove',
     'mout/array/forEach',
+    'mout/array/filter',
     'mout/object/forOwn',
     'mout/queryString/getParam',
     'utilities/game-board',
@@ -13,6 +14,7 @@ define([
     $,
     remove,
     forEach,
+    filter,
     forOwn,
     getParam,
     GameBoard,
@@ -27,11 +29,13 @@ define([
     
     var TIME_SCALE_FACTOR = 1;
     var AUTO_PLAY_MUSIC = true;
+    var LOAD_LEVEL_DELAY = 1000;
     var MAX_TOTAL_NEUTRINO_CANS = 1;
     var MAX_ACTIVE_DOORS = 1;
     var MAX_ACTIVE_TELEPODS = 1;
     var MAX_ACTIVE_MARBLES = 1;
     var MAX_TELEPODS = 5;
+    var DEFAULT_TELEPOD_PROBABILITY = 0.96;
     var TELEPOD_PROBABILITY_DECAY = 1.6;
        
     /**
@@ -46,18 +50,23 @@ define([
         var $extraLives = opts.$extraLives;
         var $telepods = opts.$telepods;
         var eventEmitter = opts.eventEmitter;// || throw new Error("No `eventEmitter` provided!");
-        var level = opts.level;// || throw new Error("No `level` provided!");
+        var levels = opts.levels;// || throw new Error("No `level` provided!");
+        var currentLevel = opts.currentLevel || 0;
+        var level = levels[currentLevel];
         var paused = opts.paused || false;
         var size = opts.size;// || throw new Error("No `size` provided!");
-        var rows = size.rows || 8; // || throw new Error("Size had no `rows` property!");
         var cols = size.cols || 40; // || throw new Error("Size had no `cols` property!");
-        var players = opts.players || [];
+        var rows = size.rows || 8; // || throw new Error("Size had no `rows` property!");
+        var players = opts.players || {};
         var duration = opts.duration || 100 * 1000;
         var music = new Audio();
         var context;
         canvas = canvas.length ? canvas[0] : canvas;
         context = canvas.getContext('2d');
-        // todo: make sure to disable retina rendering (2x the memory for the exact same output)
+        // To do: make sure to disable retina rendering (2x the memory for the exact same output)
+        music.loop = true;
+        music.volume = 0.8;
+        music.src = level.music;
         
         this._canvas = canvas;
         this._$progressBar = $progressBar;
@@ -65,14 +74,16 @@ define([
         this._$telepods = $telepods;
         this._eventEmitter = eventEmitter;
         this._context = context;
-        this._board = new GameBoard(context, level, cols, rows);
-        this._level = level;
+        this._cols = cols;
+        this._rows = rows;
+        this._levels = levels;
+        this._currentLevel = currentLevel;
         this._paused = paused;
         this._gameOver = false;
         this._players = players;
         this._duration = duration;
         this._remainingTime = duration;
-        this._telepodProbability = 0.96;
+        this._telepodProbability = DEFAULT_TELEPOD_PROBABILITY;
         this._numActiveTelepods = 0;
         this._numTotalNeutrinoCans = 0;
         this._numActiveDoors = 0;
@@ -80,9 +91,6 @@ define([
         this._gameOverImage = new Image();
         this._gameOverImage.src = ('images/src/game_over.png');
         this._backgroundMusic = music;
-        music.loop = true;
-        music.volume = 0.8;
-        music.src = level.music;
         if(AUTO_PLAY_MUSIC) {
             this.playMusic();
         }
@@ -96,7 +104,10 @@ define([
         eventEmitter.on('aiInfoRequest', function(event) {
             scope._getAiInfo.call(scope, event);
         });
-        
+                
+        this.loadLevel(level);
+        // To do: eventEmitter doesn't get aiInfoRequest until the second call to loadLevel. Fix that
+        this.loadLevel(level);
         this.enableTimer();
     }
     
@@ -119,7 +130,7 @@ define([
         var scope = this;
         if(!this._gameOver) {
             this._board.render();
-            forEach(this._players, function(player) {
+            forOwn(this._players, function(player) {
                 player.render(scope._context);
             });
         }
@@ -178,6 +189,13 @@ define([
         }
     };
     
+    GameState.prototype.resetMusic = function resetMusic(source) {
+        var music = this._backgroundMusic;
+        var wasPlaying = music.paused;
+        music.src = source;
+        music.play();
+    };
+    
     GameState.prototype.muteSoundEffects = function muteSoundEffects() {
         AudioManager.muteSoundEffects();
     };
@@ -225,7 +243,7 @@ define([
         $progressBar.toggleClass('low', percent <= 10).toggleClass('medium', percent > 10 && percent <= 40).toggleClass('high', percent > 40);
         
         if(remainingTime <= 0) {
-            forEach(this._players, function(player) {
+            forOwn(this._players, function(player) {
                 if(player.getType() === Player.types.HUMAN) {
                     scope.loseLife(player);
                 };
@@ -235,6 +253,8 @@ define([
     };
     
     GameState.prototype.loseLife = function loseLife(player) {
+        var scope = this;
+        var level = this._level;
         var lives = player.getNumExtraLives();
         
         if(player.getType() === Player.types.HUMAN) {
@@ -246,7 +266,10 @@ define([
             }
             else {
                 // to do: Reset level instead of ending game
-                this.endGame();
+                setTimeout(function() {
+                    scope.loadLevel.call(scope, level);
+                }, LOAD_LEVEL_DELAY);
+                this.pause();
             }
         }
     };
@@ -271,6 +294,73 @@ define([
     GameState.prototype.addPlayer = function addPlayer(opts) {
         var player = new Player(opts);
         this._players[player.getId()] = player;
+    };
+    
+    GameState.prototype.loadLevel = function loadLevel(level) {
+        var scope = this;
+        var players = this._players;
+        var activeMarbles = this._activeMarbles;
+        var canvas = this._canvas;
+        var context = this._context;
+        var cols = this._cols;
+        var rows = this._rows;
+        var duration = this._duration;
+        var music = this._backgroundMusic;
+                
+        // Reset variables
+        this._telepodProbability = DEFAULT_TELEPOD_PROBABILITY;
+        this._numActiveTelepods = 0;
+        this._numTotalNeutrinoCans = 0;
+        this._numActiveDoors = 0;
+        this._activeMarbles = [];
+        this._board = new GameBoard(context, level, cols, rows);
+        this._level = level;
+        this.incrementTime(duration);
+        
+        // Reset players
+        forOwn(players, function(player, index, players) {
+            if(player.getType() === Player.types.HUMAN) {
+                // Humans have state, so must be maintained, just reset their position to the initial position
+                player.resetPosition();
+                player.setNumTelepods(0);
+                player.setNumNeutrinoCans(0);
+                player.setIsAlive(true);
+                scope.updateTelepods(0);
+            }
+            else if(player.getType() === Player.types.OPPONENT) {
+                // Opponents are stateless and generated from the level object, so can be deleted
+                // Prevent the timers and listeners from running after they're removed
+                player.destruct();
+                delete players[index];
+            }
+        });
+        
+        // Create opponenets
+        forEach(level.opponents, function(opponentInfo, index) {
+            scope.addPlayer({
+                name: 'Opponent ' + (index + 1),
+                eventEmitter: scope._eventEmitter,
+                movementStrategy: 'AI',
+                initialPosition: opponentInfo.position,
+                intelligence: opponentInfo.intelligence,
+                type: Player.types.OPPONENT
+            });
+        });
+        
+        // Clear canvas
+        context.clearRect ( 0 , 0 , canvas.width, canvas.height );
+        
+        // Reset background music
+        this.resetMusic(level.music);
+        
+        
+        //////////////
+        //
+        //  To do NOW: Refactor music play/pause. Make it SIMPLE.
+        //
+        //////////////
+        
+        this.resume();
     };
     
     GameState.prototype._processMove = function _processMove(event) {
@@ -322,7 +412,7 @@ define([
         var getNearestHuman = function getNearestHuman(position) {
             var closest = null;
             var nearestHuman = null;
-            forEach(scope._players, function(player) {
+            forOwn(scope._players, function(player) {
                 var distance;
                 if(player.getIsAlive() && player.getType() === Player.types.HUMAN) {
                     distance = distanceBetween(player.getPosition, position);
@@ -513,7 +603,7 @@ define([
                 tile = board.getTile(position.x, position.y); // New tile
                 marble.setPosition(position);
                 tile.addAddon(marble);
-                forEach(players, function(player) {
+                forOwn(players, function(player) {
                     playerPosition = player.getPosition();
                     if(playerPosition.x === position.x && playerPosition.y === position.y) {
                         scope._handleMarble(player, tile, marble);
@@ -601,22 +691,21 @@ define([
             }
             this._eventEmitter.emit('renderRequest');
             setTimeout(function() {
-                var url = document.location.href;
-                if(getParam(url, 'level') == 1) {
-                   location.href='index.html?level=2'; 
-                }
-                if(getParam(url, 'level') == 2) {
-                   location.href='index.html?level=3';
-                }
-                else if(getParam(url, 'level') == 3) {
-                   console.log('You win!');
-                   scope.endGame();
-                   return true;
+                var levels = scope._levels;
+                var currentLevel = scope._currentLevel;
+                ++currentLevel;
+                
+                if(currentLevel < levels.length) {
+                    scope._currentLevel = currentLevel;
+                    scope.loadLevel.call(scope, levels[currentLevel]);
                 }
                 else {
-                   location.href='index.html?level=2';
+                    console.log('You win!');
+                    scope.endGame();
+                    return true;
                 }
-            }, 1000);
+            }, LOAD_LEVEL_DELAY);
+            this.pause();
         }
         return false;
     };
@@ -664,7 +753,7 @@ define([
         var playerType = player.getType();
         var otherType = (playerType === Player.types.HUMAN ? Player.types.OPPONENT : Player.types.HUMAN);
         var playerWhoDied = null;
-        forEach(this._players, function(tempPlayer) {
+        forOwn(this._players, function(tempPlayer) {
             var tempPosition = tempPlayer.getPosition();
             if(tempPlayer.getType() === otherType) {
                 if(tempPosition.x === position.x && tempPosition.y === position.y) {
@@ -846,7 +935,6 @@ define([
     };
     
     GameState.prototype._drop = function _drop(player) {
-        console.log("GameState::_drop");
         var numTelepods = player.getNumTelepods();
         var position = player.getPosition();
         if(numTelepods > 0 && this._numActiveTelepods < MAX_ACTIVE_TELEPODS) {
@@ -870,7 +958,6 @@ define([
         var tile = this._board.getTile(col, row);
         var addons = tile.getAddons();
         var shouldAdd = true;
-        console.log("GameState::_createTelepod");
         forOwn(addons, function(addon) {
             if(addon.getType === Addon.typeIds.TELEPOD) {
                 shouldAdd = false;

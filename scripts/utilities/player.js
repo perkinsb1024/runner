@@ -321,12 +321,13 @@ define([
         this._name = playerName;
         this._movementStrategy = movementStrategy;
         this._isAlive = true;
-        this._position = {
+        this._initialPosition = {
             x: playerInitialPosition.x,
             y: playerInitialPosition.y,
             posture: Player.postures.STAND,
             direction: Player.directions.FORWARD
-        }
+        };
+        this._position = clone(this._initialPosition);
         this._numTelepods = playerNumTelepods;
         this._numNeutrinoCans = 0;
         this._numExtraLives = playerNumExtraLives;
@@ -408,13 +409,17 @@ define([
     
     Player.prototype.die = function die() {
         console.log(this._name + " died!");
-        this._isAlive = false;
+        this.setIsAlive(false);
         var moveDetails = {
             player: this._id,
             move: Player.moves.DIE
         }
         
         this._eventEmitter.emit('playerMoveRequest', moveDetails);
+    };
+    
+    Player.prototype.destruct = function destruct() {
+        this._movementStrategy.destruct && this._movementStrategy.destruct();
     };
     
     Player.prototype.getId = function getId() {
@@ -465,12 +470,20 @@ define([
         return clone(this._position);
     };
     
-    Player.prototype.setPosition = function getName(position) {
+    Player.prototype.setPosition = function setPosition(position) {
         this._position = position;
+    };
+    
+    Player.prototype.resetPosition = function resetPosition() {
+        this._position = clone(this._initialPosition);
     };
     
     Player.prototype.getIsAlive = function getIsAlive() {
         return this._isAlive;
+    };
+    
+    Player.prototype.setIsAlive = function setIsAlive(isAlive) {
+        this._isAlive = isAlive;
     };
     
     /**

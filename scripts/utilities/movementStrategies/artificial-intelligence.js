@@ -26,7 +26,7 @@ define([
         var moveInterval = 250; // mS
         var callbacks = {};
         this.eventEmitter = eventEmitter;
-        
+                
         this.stand = function stand() {
             callbacks.stand && callbacks.stand.call(this);
         };
@@ -89,13 +89,18 @@ define([
             callbacks.drop = function() {
                 cb.call(player);
             };
-        }
+        };
+    
+        this.destruct = function destruct() {
+            clearInterval(this._timer);
+            eventEmitter.removeAllListeners('aiInfo');
+        };
         
         eventEmitter.on('aiInfo', function(event) {
             scope._move.call(scope, event);
         });
         
-        setInterval(function() {
+        this._timer = setInterval(function() {
             scope._requestInfo.call(scope);
         }, moveInterval);
     };

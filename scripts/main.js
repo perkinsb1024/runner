@@ -4,6 +4,7 @@ require([
     'jquery',
     'eventemitter2',
     'mout/array/forEach',
+    'mout/object/forOwn',
     'mout/queryString/getParam',
     'utilities/game-state',
     'utilities/player',
@@ -14,6 +15,7 @@ require([
     $,
     EventEmitter2,
     forEach,
+    forOwn,
     getParam,
     GameState,
     Player,
@@ -41,7 +43,7 @@ require([
     var $telepods = $('.telepods');
     var canvas = $canvas[0];
     var eventEmitter = new EventEmitter2();
-    var level = level1;
+    var levels = [level1, level2, level3];
     
     var processMenuItem = function processMenuItem($target, $menuItem) {
         var checked;
@@ -122,7 +124,8 @@ require([
         eventEmitter: eventEmitter,
         paused: false,
         duration: 100 * 1000,
-        level: level,
+        levels: levels,
+        currentLevel: 0,
         size: {
             cols: 40,
             rows: 8
@@ -136,13 +139,16 @@ require([
         $(canvas).on('click', function(event) {
             var x = Math.floor((event.pageX - $(this).position().left) / 16);
             var y = Math.floor((event.pageY - $(this).position().top) / 48);
-            var player = game._players[0];
             var position = {
                 x: x,
                 y: y
             }
-            player.setPosition(position);
-            game._evaluatePlayerPosition(player, position);
+            forOwn(game._players, function(player) {
+                if(player.getType() === Player.types.HUMAN) {
+                    player.setPosition(position);
+                    game._evaluatePlayerPosition(player, position);
+                }
+            });
         });
     }    
     
@@ -157,17 +163,6 @@ require([
         type: Player.types.HUMAN,
         numExtraLives: STARTING_EXTRA_LIVES,
         numTelepods: STARTING_TELEPODS
-    });
-    
-    forEach(level.opponents, function(opponentInfo, index) {
-        game.addPlayer({
-            name: 'Opponent ' + (index + 1),
-            eventEmitter: eventEmitter,
-            movementStrategy: 'AI',
-            initialPosition: opponentInfo.position,
-            intelligence: opponentInfo.intelligence,
-            type: Player.types.OPPONENT
-        });
     });
     
     game.updateTelepods(STARTING_TELEPODS);

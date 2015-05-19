@@ -99,6 +99,12 @@ define([
             };
         }
         
+        this.destruct = function destruct() {
+            clearInterval(this._timer);
+            $window.off('keydown');
+            $window.off('keyup');
+        };
+        
         $window.on('keydown', function(event) {
             return scope._keyDown.call(scope, event);
         });
@@ -106,7 +112,7 @@ define([
             return scope._keyUp.call(scope, event);
         });
         
-        setInterval(function() {
+        this._timer = setInterval(function() {
             scope._move.call(scope);
         }, keyCheck);
     };
