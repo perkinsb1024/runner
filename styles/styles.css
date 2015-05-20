@@ -135,6 +135,7 @@ body {
 }
 
 .stats {
+    display: none;
     text-align: left;
 }
 

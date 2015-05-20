@@ -6,6 +6,7 @@ require([
     'mout/array/forEach',
     'mout/object/forOwn',
     'mout/queryString/getParam',
+    'utilities/audio-manager',
     'utilities/game-state',
     'utilities/player',
     'levels/level1',
@@ -17,6 +18,7 @@ require([
     forEach,
     forOwn,
     getParam,
+    AudioManager,
     GameState,
     Player,
     level1,
@@ -25,7 +27,7 @@ require([
 ) {
     var DEBUG = false;
     var STARTING_TELEPODS = 0;
-    var STARTING_EXTRA_LIVES = 3;
+    var STARTING_EXTRA_LIVES = 2;
     
     var game, $activeMenu;
     var scope = this;
@@ -36,8 +38,7 @@ require([
     var $window = $('.window');
     var $gameContainer = $('.gameContainer');
     var $canvas = $('#runner');
-    var $playPauseMusic = $('.playPauseMusic');
-    var $playPauseGame = $('.playPauseGame');
+    var $gameStats = $('.stats');
     var $progressFill = $('.progressBar .fill');
     var $extraLives = $('.extraLives');
     var $telepods = $('.telepods');
@@ -52,19 +53,19 @@ require([
             case 'sound':
                 $target.toggleClass('checked');
                 if($target.hasClass('checked')) {
-                    game.unmuteSoundEffects();
+                    AudioManager.enableSoundEffects();
                 }
                 else {
-                    game.muteSoundEffects();
+                    AudioManager.disableSoundEffects();
                 }
                 break;
             case 'music':
                 $target.toggleClass('checked');
                 if($target.hasClass('checked')) {
-                    game.playMusic();
+                    AudioManager.enableBackgroundMusic();
                 }
                 else {
-                    game.pauseMusic();
+                    AudioManager.disableBackgroundMusic();
                 }
                 break;
             default:
@@ -118,6 +119,7 @@ require([
     }
     var game = new GameState({
         canvas: canvas,
+        $gameStats: $gameStats,
         $progressBar: $progressFill,
         $extraLives: $extraLives,
         $telepods: $telepods,

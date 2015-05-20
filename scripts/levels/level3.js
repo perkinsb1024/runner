@@ -16,6 +16,13 @@ define([
     
     return {
         "level": 3,
+        "splashImage": {
+            "path": "images/src/level3.png",
+            "size": {
+                "width": 640,
+                "height": 420
+            }
+        },
         "background": {
             "imageData": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAMAAADz0U65AAAABlBMVEXAwMD///8raYe0AAAAGklEQVR4AWNgZAQiIMEAoYEUlIbxEZgRj2IAB1AAM1ldG0sAAAAASUVORK5CYII=",
             "size": {

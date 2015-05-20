@@ -13,6 +13,13 @@ define([
     var o = GameTile.typeIds.SWITCH;
     return {
         "level": 1,
+        "splashImage": {
+            "path": "images/src/level1.png",
+            "size": {
+                "width": 640,
+                "height": 420
+            }
+        },
         "background": {
             "imageData": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAMAAADz0U65AAAABlBMVEX//wD///+LefOdAAAAE0lEQVQI12NgYIRBKGCAsUgSAQAHzwA6Dhdq6AAAAABJRU5ErkJggg==",
             "size": {

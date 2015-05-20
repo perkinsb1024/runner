@@ -6,9 +6,9 @@ define([
     // todo: Integrate background music in here as well
     
     /* Utility functions */
-    var newSoundEffect = function newSoundEffect(path) {
+    var newAudio = function newAudio(path) {
         var audio = new Audio();
-        if(audio) {
+        if(audio && path) {
             audio.src = path;
         };
         return audio;
@@ -18,30 +18,62 @@ define([
     var AudioManager = {};
     
     // To do: Put background music in here
-    AudioManager._isMuted = {
-        soundEffects: false
+    AudioManager._isEnabled = {
+        backgroundMusic: true,
+        soundEffects: true
     };
         
     AudioManager.playSound = function playSound(soundName) {
         var sound = this._sounds[soundName];
-        if(!this._isMuted.soundEffects && sound) {
+        if(this._isEnabled.soundEffects && sound) {
             sound.pause();
             sound.currentTime = 0;
             sound.play();
         };
     }
     
-    AudioManager.muteSoundEffects = function muteSoundEffects() {
-        this._isMuted.soundEffects = true;
+    AudioManager.setBackgroundMusicSource = function setBackgroundMusicSource(path) {
+        this._backgroundMusic.src = path;
     };
     
-    AudioManager.unmuteSoundEffects = function unmuteSoundEffects() {
-        this._isMuted.soundEffects = false;
+    AudioManager.resetBackgroundMusicPlayback = function resetBackgroundMusicPlayback() {
+        this._backgroundMusic.currentTime = 0;
     };
     
-    AudioManager.getIsMuted = function isMuted() {
-        return this._isMuted;
-    }
+    AudioManager.pauseBackgroundMusic = function pauseBackgroundMusic() {
+        this._backgroundMusic.pause();
+    };
+    
+    AudioManager.playBackgroundMusic = function playBackgroundMusic() {
+        if(this._isEnabled.backgroundMusic) {
+            this._backgroundMusic.play();
+        }
+    };
+    
+    AudioManager.disableBackgroundMusic = function disableBackgroundMusic() {
+        this._isEnabled.backgroundMusic = true;
+        this.pauseBackgroundMusic();
+    };
+    
+    AudioManager.enableBackgroundMusic = function enableBackgroundMusic() {
+        this._isEnabled.backgroundMusic = false;
+    };
+    
+    AudioManager.disableSoundEffects = function disableSoundEffects() {
+        this._isEnabled.soundEffects = false;
+    };
+    
+    AudioManager.enableSoundEffects = function enableSoundEffects() {
+        this._isEnabled.soundEffects = true;
+    };
+    
+    AudioManager.getBackgroundMusicIsEnabled = function getBackgroundMusicIsEnabled() {
+        return this._isEnabled.backgroundMusic;
+    };
+    
+    AudioManager.getSoundEffectsAreEnabled = function getSoundEffectsAreEnabled() {
+        return this._isEnabled.soundEffects;
+    };
 
     AudioManager.soundNames = {
         JUMP: 0,
@@ -53,14 +85,18 @@ define([
         SWITCH_OFF: 6
     };
     
+    AudioManager._backgroundMusic = newAudio();
+    AudioManager._backgroundMusic.loop = true;
+    AudioManager._backgroundMusic.volume = 0.8;
+    
     AudioManager._sounds = {};
-    AudioManager._sounds[AudioManager.soundNames.JUMP] = newSoundEffect('audio/effects/jump.mp3');
-    AudioManager._sounds[AudioManager.soundNames.DROP] = newSoundEffect('audio/effects/drop.mp3');
-    AudioManager._sounds[AudioManager.soundNames.DIE] = newSoundEffect('audio/effects/die.mp3');
-    AudioManager._sounds[AudioManager.soundNames.TELEPORT] = newSoundEffect('audio/effects/teleport.mp3');
-    AudioManager._sounds[AudioManager.soundNames.CAN] = newSoundEffect('audio/effects/can.mp3');
-    AudioManager._sounds[AudioManager.soundNames.SWITCH_ON] = newSoundEffect('audio/effects/switch_on.mp3');
-    AudioManager._sounds[AudioManager.soundNames.SWITCH_OFF] = newSoundEffect('audio/effects/switch_off.mp3');
+    AudioManager._sounds[AudioManager.soundNames.JUMP] = newAudio('audio/effects/jump.mp3');
+    AudioManager._sounds[AudioManager.soundNames.DROP] = newAudio('audio/effects/drop.mp3');
+    AudioManager._sounds[AudioManager.soundNames.DIE] = newAudio('audio/effects/die.mp3');
+    AudioManager._sounds[AudioManager.soundNames.TELEPORT] = newAudio('audio/effects/teleport.mp3');
+    AudioManager._sounds[AudioManager.soundNames.CAN] = newAudio('audio/effects/can.mp3');
+    AudioManager._sounds[AudioManager.soundNames.SWITCH_ON] = newAudio('audio/effects/switch_on.mp3');
+    AudioManager._sounds[AudioManager.soundNames.SWITCH_OFF] = newAudio('audio/effects/switch_off.mp3');
     
     return AudioManager;
 });
