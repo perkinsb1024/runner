@@ -23,6 +23,8 @@ define([
     Addon,
     Player
 ) {
+    // To do: Centralize drawing splash, game over and time expired image
+    
     var tileSize = GameTile.getTileSize();
     var tileWidth = tileSize.width;
     var tileHeight = tileSize.height;
@@ -90,6 +92,8 @@ define([
         this._activeMarbles = [];
         this._gameOverImage = new Image();
         this._gameOverImage.src = ('images/src/game_over.png');
+        this._timeExpiredImage = new Image();
+        this._timeExpiredImage.src = ('images/src/time_expired.png');
         if(!AUTO_PLAY_MUSIC) {
             AudioManager.disableBackgroundMusic();
         }
@@ -109,9 +113,9 @@ define([
         this.loadLevel(level);
     }
     
-    GameState.prototype.enableTimer = function enableTimer() {
+    GameState.prototype._enableTimer = function _enableTimer() {
         var scope = this;
-        if(!this._interval) {
+        if(!this._interval) {   
             this._interval = setInterval(function() {
                 scope.decrementTime.call(scope, 500)
                 scope._intervalLogic.call(scope);
@@ -119,7 +123,7 @@ define([
         }
     };
     
-    GameState.prototype.disableTimer = function disableTimer() {
+    GameState.prototype._disableTimer = function _disableTimer() {
         clearInterval(this._interval);
         this._interval = null;
     };
@@ -140,12 +144,12 @@ define([
     GameState.prototype.resume = function resume() {
         if(!this._gameOver && this._paused) {
             AudioManager.playBackgroundMusic();
-            this._paused = false;
             if(this._preLevel) {
                 this._startLevel();
             }
             else {
-                this.enableTimer();
+                this._paused = false;
+                this._enableTimer();
             }
         }
     };
@@ -158,7 +162,7 @@ define([
         }
         if(!this._paused) {
             AudioManager.pauseBackgroundMusic();
-            this.disableTimer();
+            this._disableTimer();
             this._paused = true;
         }
     };
@@ -187,6 +191,7 @@ define([
     GameState.prototype.incrementTime = function incrementTime(amount) {
         var percent;
         var scope = this;
+        var image = this._timeExpiredImage;
         var $progressBar = this._$progressBar;
         var remainingTime = this._remainingTime;
         var duration = this._duration;
@@ -202,6 +207,11 @@ define([
         $progressBar.toggleClass('low', percent <= 10).toggleClass('medium', percent > 10 && percent <= 40).toggleClass('high', percent > 40);
         
         if(remainingTime <= 0) {
+            this._context.drawImage(
+                image,
+                this._canvas.width / 2 - image.width / 2,
+                this._canvas.height / 2 - image.height / 2
+            );
             forOwn(this._players, function(player) {
                 if(player.getType() === Player.types.HUMAN) {
                     scope.loseLife(player);
