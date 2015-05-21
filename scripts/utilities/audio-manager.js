@@ -51,12 +51,12 @@ define([
     };
     
     AudioManager.disableBackgroundMusic = function disableBackgroundMusic() {
-        this._isEnabled.backgroundMusic = true;
+        this._isEnabled.backgroundMusic = false;
         this.pauseBackgroundMusic();
     };
     
     AudioManager.enableBackgroundMusic = function enableBackgroundMusic() {
-        this._isEnabled.backgroundMusic = false;
+        this._isEnabled.backgroundMusic = true;
     };
     
     AudioManager.disableSoundEffects = function disableSoundEffects() {

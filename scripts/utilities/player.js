@@ -13,6 +13,7 @@ define([
     var tileWidth = tileSize.width;
     var tileHeight = tileSize.height;
     
+    var MAX_ALTERNATE_IMAGE_COUNT = 16;
     var EMPTY_IMAGE = "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
     
     var playerCount = 0;
@@ -334,14 +335,18 @@ define([
         this._type = playerType;
         this._intelligence = playerIntelligence;
         this._eventEmitter = eventEmitter;
+        this._alternateIndex = 0;
         
         movementStrategy.setPlayerId && movementStrategy.setPlayerId(id);
         movementStrategy.setPlayerIntelligence && movementStrategy.setPlayerIntelligence(playerIntelligence);
         attachMovementStrategyFunctions.call(this, this._movementStrategy);
         
-        playerCount++;
-                
+        playerCount++;                
         return this;
+    };
+    
+    Player.prototype._incrementAltenateImage = function _incrementAltenateImage() {
+        this._alternateIndex = (++this._alternateIndex) % MAX_ALTERNATE_IMAGE_COUNT;
     };
     
     Player.prototype.stand = function stand() {
@@ -472,6 +477,7 @@ define([
     
     Player.prototype.setPosition = function setPosition(position) {
         this._position = position;
+        this._incrementAltenateImage();
     };
     
     Player.prototype.resetPosition = function resetPosition() {
@@ -493,7 +499,7 @@ define([
     Player.prototype.render = function(context) {
         var offsetY = 8;
         var position = this._position;
-        var image = getImage(this._type, position.posture, position.direction);
+        var image = getImage(this._type, position.posture, position.direction, this._alternateIndex);
         context.drawImage(image, position.x * tileWidth, position.y * tileHeight + offsetY);
     };
     
