@@ -109,9 +109,9 @@ define([
             scope._getAiInfo.call(scope, event);
         });
                 
-        this.loadLevel(level);
+        this._loadLevel(level);
         // To do: eventEmitter doesn't get aiInfoRequest until the second call to loadLevel. Fix that
-        this.loadLevel(level);
+        this._loadLevel(level);
     }
     
     GameState.prototype._enableTimer = function _enableTimer() {
@@ -241,10 +241,18 @@ define([
                 player.setNumExtraLives(lives);
                 this.updateExtraLives(lives);
                 setTimeout(function() {
-                    scope.loadLevel.call(scope, level);
+                    scope._loadLevel.call(scope, level);
                 }, RELOAD_LEVEL_DELAY);
                 this.pause();
             }
+        }
+    };
+    
+    GameState.prototype.setLevel = function setLevel(levelIndex) {
+        var level = this._levels[levelIndex];
+        if(!!level) {
+            this._currentLevel = levelIndex;
+            this._loadLevel(level);
         }
     };
     
@@ -270,7 +278,7 @@ define([
         this._players[player.getId()] = player;
     };
     
-    GameState.prototype.loadLevel = function loadLevel(level) {
+    GameState.prototype._loadLevel= function _loadLevel(level) {
         var scope = this;
         var players = this._players;
         var activeMarbles = this._activeMarbles;
@@ -711,7 +719,7 @@ define([
                 
                 if(currentLevel < levels.length) {
                     scope._currentLevel = currentLevel;
-                    scope.loadLevel.call(scope, levels[currentLevel]);
+                    scope._loadLevel.call(scope, levels[currentLevel]);
                 }
                 else {
                     console.log('You win!');
@@ -799,7 +807,14 @@ define([
             position.posture = Player.postures.FALL;
             position.direction = Player.directions.FORWARD;
             player.setPosition(position);
-            return true;
+            // Check if the player is still falling
+            tile = board.getTile(position.x, position.y);
+            if(tile.getType() === GameTile.typeIds.HOLE) {
+                player.setCurrentAction(Player.actions.FALLING);
+            }
+            else {
+                player.setCurrentAction(Player.actions.NONE);
+            }
         }
         return false;
     };
@@ -811,19 +826,20 @@ define([
         var scope = this;
         var functions = [this._handleOpponent, this._handleSwitch, this._handleAddons, this._handleHole];
         var tile = this._board.getTile(position.x, position.y);
-        var positionDidChange = false;
+        var needsEvaluationAgain = false;
         forEach(functions, function(fn) {
-            positionDidChange = fn.call(scope, player, tile, position);
-            if(positionDidChange) {
+            needsEvaluationAgain = fn.call(scope, player, tile, position);
+            if(needsEvaluationAgain) {
                 return false; // break out of loop
             }
         });
-        if(positionDidChange) {
+        if(needsEvaluationAgain) {
             // The player's position has changed, so evaluate new state
             
             // todo: instead of evaluating right away, mark the player as dirty and evaluate again on the next move, block moves while player is dirty
             this._evaluatePlayerPosition(player, player.getPosition());
         }
+        this._eventEmitter.emit('renderRequest');
     };
 
     GameState.prototype._teleportPlayer = function _teleportPlayer(player, position) {
@@ -832,6 +848,8 @@ define([
             position = board.getRandomPosition();
         }
         player.setPosition(position);
+        player.setCurrentAction(Player.actions.NONE);
+        player.setOffset(Player.defaultOffset);
         AudioManager.playSound(AudioManager.soundNames.TELEPORT);
         this._evaluatePlayerPosition(player, position);
     };
@@ -839,9 +857,13 @@ define([
     GameState.prototype._stand = function _stand(player) {
         var position = player.getPosition();
         var currentAction = player.getCurrentAction();
-        if(currentAction === Player.actions.CLIMB) {
+        if(currentAction === Player.actions.CLIMBING) {
             // Don't want to reset image if climbing
             return;
+        }
+        else if(currentAction === Player.actions.FALLING) {
+            // Make sure the player keeps falling even if not trying to move
+            return this._evaluatePlayerPosition(player, position);
         }
         position.direction = Player.directions.FORWARD;
         position.posture = Player.postures.STAND;
@@ -855,8 +877,12 @@ define([
         var position = player.getPosition();
         var board = this._board;
         var currentAction = player.getCurrentAction();
-        if(currentAction === Player.actions.CLIMB) {
+        if(currentAction === Player.actions.CLIMBING) {
             return;
+        }
+        else if(currentAction === Player.actions.FALLING) {
+            // Not allowed to move while actively falling
+            return this._evaluatePlayerPosition(player, position);
         }
         // Move player left, if possible
         if(position.x > 0) {
@@ -876,8 +902,12 @@ define([
         var position = player.getPosition();
         var board = this._board;
         var currentAction = player.getCurrentAction();
-        if(currentAction === Player.actions.CLIMB) {
+        if(currentAction === Player.actions.CLIMBING) {
             return;
+        }
+        else if(currentAction === Player.actions.FALLING) {
+            // Not allowed to move while actively falling
+            return this._evaluatePlayerPosition(player, position);
         }
         // Move player right, if possible
         if(position.x < board.getCols() - 1) {
@@ -905,13 +935,13 @@ define([
                 position.direction = Player.directions.BACKWARD;
                 player.setPosition(position);
                 // Indicate the player is currently climbing
-                player.setCurrentAction(Player.actions.CLIMB);
+                player.setCurrentAction(Player.actions.CLIMBING);
                 // Put the player partway down the ladder
                 offset.y = LADDER_OFFSET;
                 player.setOffset(offset);
             }
         }
-        else if(currentAction === Player.actions.CLIMB) {
+        else if(currentAction === Player.actions.CLIMBING) {
             offset.y += LADDER_OFFSET;
             if(offset.y < 1) {
                 // Hasn't finished climbing ladder
@@ -935,6 +965,10 @@ define([
                 this._evaluatePlayerPosition(player, position);
             }
         }
+        else if(currentAction === Player.actions.FALLING) {
+            // Not allowed to move while actively falling
+            return this._evaluatePlayerPosition(player, position);
+        }
         this._eventEmitter.emit('renderRequest');
     };
     
@@ -951,13 +985,13 @@ define([
                 position.direction = Player.directions.BACKWARD;
                 player.setPosition(position);
                 // Indicate the player is currently climbing
-                player.setCurrentAction(Player.actions.CLIMB);
+                player.setCurrentAction(Player.actions.CLIMBING);
                 // Put the player partway down the ladder
                 offset.y = 1 - LADDER_OFFSET;
                 player.setOffset(offset);
             }
         }
-        else if(currentAction === Player.actions.CLIMB) {
+        else if(currentAction === Player.actions.CLIMBING) {
             offset.y -= LADDER_OFFSET;
             if(offset.y > 0) {
                 // Hasn't finished climbing ladder
@@ -980,6 +1014,10 @@ define([
                 this._evaluatePlayerPosition(player, position);
             }
         }
+        else if(currentAction === Player.actions.FALLING) {
+            // Not allowed to move while actively falling
+            return this._evaluatePlayerPosition(player, position);
+        }
         this._eventEmitter.emit('renderRequest');
     };
     
@@ -988,8 +1026,12 @@ define([
         var board = this._board;
         var didJump = false;
         var currentAction = player.getCurrentAction();
-        if(currentAction === Player.actions.CLIMB) {
+        if(currentAction === Player.actions.CLIMBING) {
             return;
+        }
+        else if(currentAction === Player.actions.FALLING) {
+            // Not allowed to move while actively falling
+            return this._evaluatePlayerPosition(player, position);
         }
         if(position.direction === Player.directions.LEFT && position.x > 1) {
             position.posture = Player.postures.JUMP;

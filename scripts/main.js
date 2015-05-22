@@ -148,6 +148,8 @@ require([
             forOwn(game._players, function(player) {
                 if(player.getType() === Player.types.HUMAN) {
                     player.setPosition(position);
+                    player.setCurrentAction(Player.actions.NONE);
+                    player.setOffset(Player.defaultOffset);
                     game._evaluatePlayerPosition(player, position);
                 }
             });

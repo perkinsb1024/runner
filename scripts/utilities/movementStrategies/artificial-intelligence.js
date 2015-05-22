@@ -196,7 +196,7 @@ define([
                 }
             }
         }
-        else if(currentAction === Player.actions.CLIMB) {
+        else if(currentAction === Player.actions.CLIMBING) {
             // Can only climb up or down
             if(position.y > target.y) {
                 // Only climb up if the target is above you
@@ -206,6 +206,9 @@ define([
                 // If the target is on your level or lower, climb down
                 return this.climbDown();
             }
+        }
+        else if(currentAction === Player.actions.FALLING) {
+            return this.stand();
         }
     };
     
