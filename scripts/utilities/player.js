@@ -329,6 +329,8 @@ define([
             direction: Player.directions.FORWARD
         };
         this._position = clone(this._initialPosition);
+        this._offset = Player.defaultOffset;
+        this._currentAction = Player.actions.NONE;
         this._numTelepods = playerNumTelepods;
         this._numNeutrinoCans = 0;
         this._numExtraLives = playerNumExtraLives;
@@ -482,6 +484,24 @@ define([
     
     Player.prototype.resetPosition = function resetPosition() {
         this._position = clone(this._initialPosition);
+        this._offset = Player.defaultOffset;
+        this._currentAction = Player.actions.NONE;
+    };
+    
+    Player.prototype.getOffset = function getOffset() {
+        return clone(this._offset);
+    };
+    
+    Player.prototype.setOffset = function setOffset(offset) {
+        this._offset = offset;
+    };
+    
+    Player.prototype.getCurrentAction = function getCurrentAction() {
+        return this._currentAction;
+    };
+    
+    Player.prototype.setCurrentAction = function setCurrentAction(currentAction) {
+        this._currentAction = currentAction;
     };
     
     Player.prototype.getIsAlive = function getIsAlive() {
@@ -497,10 +517,15 @@ define([
      * todo: finish this JSDoc
      */
     Player.prototype.render = function(context) {
-        var offsetY = 8;
+        var offsetY = 6 - Math.round(this._offset.y * (tileHeight - 16));
         var position = this._position;
         var image = getImage(this._type, position.posture, position.direction, this._alternateIndex);
         context.drawImage(image, position.x * tileWidth, position.y * tileHeight + offsetY);
+    };
+    
+    Player.defaultOffset = {
+        x: 0,
+        y: 0
     };
     
     Player.types = {
@@ -531,6 +556,12 @@ define([
         FALL: 4,
         DEAD: 5,
         GONE: 6
+    };
+    Player.actions = {
+        NONE: 0,
+        CLIMBING: 1,
+        JUMPING: 2,
+        FALLING: 3
     };
     
     return Player;

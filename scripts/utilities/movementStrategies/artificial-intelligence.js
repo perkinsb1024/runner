@@ -20,7 +20,7 @@ define([
     remove,
     values,
     some
-) { 
+) {
     var ArtificialIntelligenceMovementStrategy = function ArtificialIntelligenceMovementStrategy(eventEmitter) {
         var scope = this;
         var moveInterval = 250; // mS
@@ -118,7 +118,10 @@ define([
     ArtificialIntelligenceMovementStrategy.prototype._move = function _move(event) {
         var nearestLadder, ladders, preferLeft;
         var scope = this;
+        var Player = event.Player;
         var position = event.position;
+        var offset = event.offset;
+        var currentAction = event.currentAction;
         var target = event.nearestHuman;
         var laddersOnThisRow = event.laddersOnThisRow;
         var laddersOnLowerRow = event.laddersOnLowerRow;
@@ -161,33 +164,47 @@ define([
             // No living humans
             return this.stand();
         }
-        else if(position.y === target.y) {
-            // On same level as target
-            if(position.x < target.x) {
-                // Left of target
-                return this.moveRight();
-            }
-            else if(position.x > target.x) {
-                return this.moveLeft();
+            
+        if(currentAction === Player.actions.NONE) {
+            if(position.y === target.y) {
+                // On same level as target
+                if(position.x < target.x) {
+                    // Left of target
+                    return this.moveRight();
+                }
+                else if(position.x > target.x) {
+                    return this.moveLeft();
+                }
+                else {
+                    return this.stand();
+                }            
             }
             else {
-                return this.stand();
+                // Use laders beneath you to move down or ladders on your row to move up
+                ladders = (position.y < target.y) ? laddersOnLowerRow : laddersOnThisRow;
+                // Prefer running toward a ladder in the opposite direction of your target
+                preferLeft = (position.x < target.x + this._intelligence);
+                nearestLadder = getNearestLadder(ladders, position, preferLeft);
+                if(position.x < nearestLadder.x) {
+                    return this.moveRight();
+                }
+                else if(position.x > nearestLadder.x) {
+                    return this.moveLeft();
+                }
+                else {
+                    return (position.y < nearestLadder.y) ? this.climbDown() : this.climbUp();
+                }
             }
         }
-        else {
-            // Use laders beneath you to move down or ladders on your row to move up
-            ladders = (position.y < target.y) ? laddersOnLowerRow : laddersOnThisRow;
-            // Prefer running toward a ladder in the opposite direction of your target
-            preferLeft = (position.x < target.x + this._intelligence);
-            nearestLadder = getNearestLadder(ladders, position, preferLeft);
-            if(position.x < nearestLadder.x) {
-                return this.moveRight();
-            }
-            else if(position.x > nearestLadder.x) {
-                return this.moveLeft();
+        else if(currentAction === Player.actions.CLIMB) {
+            // Can only climb up or down
+            if(position.y > target.y) {
+                // Only climb up if the target is above you
+                return this.climbUp();
             }
             else {
-                return (position.y < nearestLadder.y) ? this.climbDown() : this.climbUp();
+                // If the target is on your level or lower, climb down
+                return this.climbDown();
             }
         }
     };

@@ -30,7 +30,7 @@ define([
     var tileHeight = tileSize.height;
     
     var TIME_SCALE_FACTOR = 1;
-    var AUTO_PLAY_MUSIC = true;
+    var AUTO_PLAY_MUSIC = false;
     var RELOAD_LEVEL_DELAY = 1000;
     var SPLASH_DELAY = 2500;
     var MAX_TOTAL_NEUTRINO_CANS = 1;
@@ -40,6 +40,7 @@ define([
     var MAX_TELEPODS = 5;
     var DEFAULT_TELEPOD_PROBABILITY = 0.96;
     var TELEPOD_PROBABILITY_DECAY = 1.6;
+    var LADDER_OFFSET = 0.5; // Fraction of ladder per climb
        
     /**
      * Creates a new GameState
@@ -397,7 +398,7 @@ define([
     };
     
     GameState.prototype._getAiInfo = function _getAiInfo(event) {
-        var position, info;
+        var position, offset, currentAction, info;
         var scope = this;
         var playerId = event.player;
         var player = this._players[playerId];
@@ -443,9 +444,18 @@ define([
         
         if(player) {
             position = player.getPosition();
+            offset = player.getOffset();
+            currentAction = player.getCurrentAction();
             info = {
+                Player: {
+                    // to do: this just makes me feel dirty all over
+                    // But ai can't require Player because of circular dependency
+                    actions: Player.actions
+                },
                 player: playerId,
                 position: position,
+                offset: offset,
+                currentAction: currentAction,
                 nearestHuman: getNearestHuman(position),
                 laddersOnThisRow: getLaddersOnRow(position.y),
                 laddersOnLowerRow: getLaddersOnRow(position.y + 1)
@@ -823,6 +833,11 @@ define([
         
     GameState.prototype._stand = function _stand(player) {
         var position = player.getPosition();
+        var currentAction = player.getCurrentAction();
+        if(currentAction === Player.actions.CLIMB) {
+            // Don't want to reset image if climbing
+            return;
+        }
         position.direction = Player.directions.FORWARD;
         position.posture = Player.postures.STAND;
         
@@ -831,9 +846,13 @@ define([
     };
     
     GameState.prototype._moveLeft = function _moveLeft(player) {
+        var tile;
         var position = player.getPosition();
         var board = this._board;
-        var tile, switchState;
+        var currentAction = player.getCurrentAction();
+        if(currentAction === Player.actions.CLIMB) {
+            return;
+        }
         // Move player left, if possible
         if(position.x > 0) {
             position.direction = Player.directions.LEFT;
@@ -848,9 +867,13 @@ define([
     };
     
     GameState.prototype._moveRight = function _moveRight(player) {
+        var tile;
         var position = player.getPosition();
         var board = this._board;
-        var tile, switchState;
+        var currentAction = player.getCurrentAction();
+        if(currentAction === Player.actions.CLIMB) {
+            return;
+        }
         // Move player right, if possible
         if(position.x < board.getCols() - 1) {
             position.direction = Player.directions.RIGHT;
@@ -868,38 +891,101 @@ define([
         var position = player.getPosition();
         var board = this._board;
         var tile = board.getTile(position.x, position.y);
-        if(position.y > 0 && tile && tile.getType() == GameTile.typeIds.LADDER) {
-            position.y--;
-            position.posture = Player.postures.CLIMB;
-            position.direction = Player.directions.BACKWARD;
-            player.setPosition(position);
-            
-            tile = board.getTile(position.x, position.y);
-            this._evaluatePlayerPosition(player, position);
-            this._eventEmitter.emit('renderRequest');
+        var offset = player.getOffset();
+        var currentAction = player.getCurrentAction();
+        if(currentAction === Player.actions.NONE) {
+            // Player has not started climbing yet)
+            if(position.y > 0 && tile && tile.getType() == GameTile.typeIds.LADDER) {
+                position.posture = Player.postures.CLIMB;
+                position.direction = Player.directions.BACKWARD;
+                player.setPosition(position);
+                // Indicate the player is currently climbing
+                player.setCurrentAction(Player.actions.CLIMB);
+                // Put the player partway down the ladder
+                offset.y = LADDER_OFFSET;
+                player.setOffset(offset);
+            }
         }
+        else if(currentAction === Player.actions.CLIMB) {
+            offset.y += LADDER_OFFSET;
+            if(offset.y < 1) {
+                // Hasn't finished climbing ladder
+                player.setOffset(offset);
+                // Still need to set position to update the alternate image index
+                position.posture = Player.postures.CLIMB;
+                position.direction = Player.directions.BACKWARD;
+                player.setPosition(position);
+            }
+            else {
+                // Reset the offset
+                offset.y = 0;
+                player.setOffset(offset);
+                // Set the position
+                position.y--;
+                position.posture = Player.postures.CLIMB;
+                position.direction = Player.directions.BACKWARD;
+                player.setPosition(position);
+                // Indicate that the player is done climbing
+                player.setCurrentAction(Player.actions.NONE);
+                this._evaluatePlayerPosition(player, position);
+            }
+        }
+        this._eventEmitter.emit('renderRequest');
     };
     
     GameState.prototype._climbDown = function _climbDown(player) {
         var position = player.getPosition();
         var board = this._board;
         var tile = board.getTile(position.x, position.y + 1);
-        if(position.y < board.getRows() - 1 && tile && tile.getType() == GameTile.typeIds.LADDER) {
-            position.y++;
-            position.posture = Player.postures.CLIMB;
-            position.direction = Player.directions.BACKWARD;
-            player.setPosition(position);
-            
-            tile = board.getTile(position.x, position.y);
-            this._evaluatePlayerPosition(player, position);
-            this._eventEmitter.emit('renderRequest');
+        var offset = player.getOffset();
+        var currentAction = player.getCurrentAction();
+        if(currentAction === Player.actions.NONE) {
+            if(position.y < board.getRows() - 1 && tile && tile.getType() == GameTile.typeIds.LADDER) {
+                position.y++;
+                position.posture = Player.postures.CLIMB;
+                position.direction = Player.directions.BACKWARD;
+                player.setPosition(position);
+                // Indicate the player is currently climbing
+                player.setCurrentAction(Player.actions.CLIMB);
+                // Put the player partway down the ladder
+                offset.y = 1 - LADDER_OFFSET;
+                player.setOffset(offset);
+            }
         }
+        else if(currentAction === Player.actions.CLIMB) {
+            offset.y -= LADDER_OFFSET;
+            if(offset.y > 0) {
+                // Hasn't finished climbing ladder
+                player.setOffset(offset);
+                // Still need to set position to update the alternate image index
+                position.posture = Player.postures.CLIMB;
+                position.direction = Player.directions.BACKWARD;
+                player.setPosition(position);
+            }
+            else {
+                // Reset the offset
+                offset.y = 0;
+                player.setOffset(offset);
+                // Set the position
+                position.posture = Player.postures.CLIMB;
+                position.direction = Player.directions.BACKWARD;
+                player.setPosition(position);
+                // Indicate that the player is done climbing
+                player.setCurrentAction(Player.actions.NONE);
+                this._evaluatePlayerPosition(player, position);
+            }
+        }
+        this._eventEmitter.emit('renderRequest');
     };
     
     GameState.prototype._jump = function _jump(player) {
         var position = player.getPosition();
         var board = this._board;
         var didJump = false;
+        var currentAction = player.getCurrentAction();
+        if(currentAction === Player.actions.CLIMB) {
+            return;
+        }
         if(position.direction === Player.directions.LEFT && position.x > 1) {
             position.posture = Player.postures.JUMP;
             position.x -= 2;
@@ -928,6 +1014,7 @@ define([
 	    position.direction = Player.directions.FORWARD;
         position.y = board.getRows() - 1;
         player.setPosition(position);
+        player.setOffset(Player.defaultOffset);
         
         AudioManager.playSound(AudioManager.soundNames.DIE);
         this._eventEmitter.emit('renderRequest');
@@ -937,6 +1024,7 @@ define([
         var numTelepods = player.getNumTelepods();
         var position = player.getPosition();
         if(numTelepods > 0 && this._numActiveTelepods < MAX_ACTIVE_TELEPODS) {
+            // To do: pass player offset into _createTelepod
             if(this._createTelepod(position)) {
                 --numTelepods;
                 ++(this._numActiveTelepods);
