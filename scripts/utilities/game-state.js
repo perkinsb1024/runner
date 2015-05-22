@@ -143,6 +143,11 @@ define([
     };
     
     GameState.prototype.resume = function resume() {
+        if(this._preLevelTimer) {
+            // Prevent the level from automatically starting
+            clearTimeout(this._preLevelTimer);
+            this._preLevelTimer = undefined;
+        }
         if(!this._gameOver && this._paused) {
             AudioManager.playBackgroundMusic();
             if(this._preLevel) {
