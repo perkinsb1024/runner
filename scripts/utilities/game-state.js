@@ -30,7 +30,7 @@ define([
     var tileHeight = tileSize.height;
     
     var TIME_SCALE_FACTOR = 1;
-    var AUTO_PLAY_MUSIC = false;
+    var AUTO_PLAY_MUSIC = true;
     var RELOAD_LEVEL_DELAY = 1000;
     var SPLASH_DELAY = 2500;
     var MAX_TOTAL_NEUTRINO_CANS = 1;
