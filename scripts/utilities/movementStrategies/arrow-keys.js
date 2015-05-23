@@ -37,10 +37,10 @@ define([
             drop: [keyCodes.SHIFT]
         };
         this._validKeys = union.apply(this, values(this._keyCodes));
-
+        
         this.stand = function stand() {
             callbacks.stand && callbacks.stand.call(this);
-        }
+        };
         this.moveLeft = function moveLeft() {
             callbacks.left && callbacks.left.call(this);
         };
@@ -58,6 +58,9 @@ define([
         };
         this.drop = function drop() {
             callbacks.drop && callbacks.drop.call(this);
+            // This is a dirty hack because modifier key behavior in javascript is attrocious.
+            // I wish I didn't have to do this, but I could think of no other 100% reliable solution.
+            this._keyUp(this._fakeKeyEvent(keyCodes.SHIFT));
         }
         
         this.setPlayerId = function setPlayerId(id) {
@@ -121,6 +124,13 @@ define([
     ArrowKeysMovementStrategy.prototype._currentlyPressed = [];
     // _ignore is ONLY used to prevent key repeats
     ArrowKeysMovementStrategy.prototype._ignore = [];
+    
+    ArrowKeysMovementStrategy.prototype._fakeKeyEvent = function fakeKeyEvent(keyCode) {
+        // keyCode is the only property currently used, but others can be added as needed
+        return {
+            keyCode: keyCode
+        };
+    };
     
     ArrowKeysMovementStrategy.prototype._keyDown = function _keyDown(event) {
         var keyCode = (event && event.keyCode);

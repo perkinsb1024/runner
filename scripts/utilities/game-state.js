@@ -857,6 +857,7 @@ define([
     GameState.prototype._stand = function _stand(player) {
         var position = player.getPosition();
         var currentAction = player.getCurrentAction();
+        // To do: This is terribly un-DRY, repeating this in every move function. Clean this up
         if(currentAction === Player.actions.CLIMBING) {
             // Don't want to reset image if climbing
             return;
@@ -1022,6 +1023,7 @@ define([
     };
     
     GameState.prototype._jump = function _jump(player) {
+        var tile;
         var position = player.getPosition();
         var board = this._board;
         var didJump = false;
@@ -1047,9 +1049,15 @@ define([
         
         if(didJump) {
             AudioManager.playSound(AudioManager.soundNames.JUMP);
+            // If they jumped, onto a hole we need to mark them as falling
+            // If we did _evaluatePlayerPosition instead, they would fall immediately which makes gameplay feel broken
+            tile = board.getTile(position.x, position.y);
+            if(tile.getType() === GameTile.typeIds.HOLE) {
+                player.setCurrentAction(Player.actions.FALLING);
+            };
         }
         
-        this._evaluatePlayerPosition(player, position);
+        //this._evaluatePlayerPosition(player, position);
         this._eventEmitter.emit('renderRequest');
     };
     

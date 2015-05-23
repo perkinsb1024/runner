@@ -160,28 +160,28 @@ define([
             "OPPONENT_JUMP_LEFT": [
                 (function() {
                     var image = new Image();
-                    image.src = (imageDir + 'run_left_pink_4.png');
+                    image.src = (imageDir + 'jump_left_pink.png');
                     return image;
                 })()
             ],
             "OPPONENT_JUMP_RIGHT": [
                 (function() {
                     var image = new Image();
-                    image.src = (imageDir + 'run_right_pink_4.png');
+                    image.src = (imageDir + 'jump_right_pink.png');
                     return image;
                 })()
             ],
             "HUMAN_JUMP_LEFT": [
                 (function() {
                     var image = new Image();
-                    image.src = (imageDir + 'run_left_yellow_4.png');
+                    image.src = (imageDir + 'jump_left_yellow.png');
                     return image;
                 })()
             ],
             "HUMAN_JUMP_RIGHT": [
                 (function() {
                     var image = new Image();
-                    image.src = (imageDir + 'run_right_yellow_4.png');
+                    image.src = (imageDir + 'jump_right_yellow.png');
                     return image;
                 })()
             ],
