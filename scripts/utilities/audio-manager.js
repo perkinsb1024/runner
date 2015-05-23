@@ -81,8 +81,9 @@ define([
         DIE: 2,
         TELEPORT: 3,
         CAN: 4,
-        SWITCH_ON: 5,
-        SWITCH_OFF: 6
+        MARBLE: 5,
+        SWITCH_ON: 6,
+        SWITCH_OFF: 7
     };
     
     AudioManager._backgroundMusic = newAudio();
@@ -95,6 +96,7 @@ define([
     AudioManager._sounds[AudioManager.soundNames.DIE] = newAudio('audio/effects/die.mp3');
     AudioManager._sounds[AudioManager.soundNames.TELEPORT] = newAudio('audio/effects/teleport.mp3');
     AudioManager._sounds[AudioManager.soundNames.CAN] = newAudio('audio/effects/can.mp3');
+    AudioManager._sounds[AudioManager.soundNames.MARBLE] = newAudio('audio/effects/marble.mp3');
     AudioManager._sounds[AudioManager.soundNames.SWITCH_ON] = newAudio('audio/effects/switch_on.mp3');
     AudioManager._sounds[AudioManager.soundNames.SWITCH_OFF] = newAudio('audio/effects/switch_off.mp3');
     

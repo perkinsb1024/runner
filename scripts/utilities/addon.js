@@ -1,41 +1,54 @@
 define([
+    'mout/lang/clone',
     './game-tile'
 ], function (
+    clone,
     GameTile
 ) {
     var DEFAULT_TYPE = 0; // Marble
     var DEFAULT_SUB_TYPE = 0; // Red
+    var OUTER_INTERVAL = 500; // mS between setPosition calls
+    var UPDATE_INTERVAL = 125; // mS between redraws for internal motion
+    var UPDATE_FRACTION = UPDATE_INTERVAL / OUTER_INTERVAL; // Inverse of updates between setPosition calls
+    
     var tileSize = GameTile.getTileSize();
     var tileWidth = tileSize.width;
     var tileHeight = tileSize.height;
     var imageDir = 'images/src/';
     
-    var Addon = function Addon(context, col, row, typeId, subTypeId) {
+    var Addon = function Addon(context, eventEmitter, col, row, typeId, subTypeId) {
         // These shoudln't take col, row - They should not be aware of the game board. Just draw and return themself
             // Figure out how to return a canvas-drawable section like that
         this._context = context;
+        this._eventEmitter = eventEmitter;
         this._col = col;
         this._row = row;
         this._typeId = typeId;
         this._type = Addon.types[typeId] || Addon.types[DEFAULT_TYPE];
+        this._offsets = clone(this._type.offsets);
+        this._offsetIndex = 0;
         if(typeId === Addon.typeIds.MARBLE) {
             this._subTypeId = subTypeId || DEFAULT_SUB_TYPE;
+            this.enableUpdateTimer();
         }
     };
         
     Addon.prototype.render = function() {
+        var offset = this._offsets[this._offsetIndex] || {};
+        var offsetX = Math.round(offset.x);
+        var offsetY = Math.round(offset.y);
         this._type.render(
             this._context,
             {
-                "x": this._col * tileWidth,
-                "y": this._row * tileHeight
+                "x": this._col * tileWidth + offsetX,
+                "y": this._row * tileHeight + offsetY
             },
             this._subTypeId
         );
     };
     
-    Addon.prototype.removeAddon = function removeAddon(addon) {
-        return remove(this._addons, addon);
+    Addon.prototype.destruct = function destruct() {
+        this.disableUpdateTimer();
     };
     
     Addon.prototype.getType = function getType() {
@@ -57,6 +70,31 @@ define([
     Addon.prototype.setPosition = function setPosition(position) {
         this._col = position.x;
         this._row = position.y;
+        this._offsetIndex = 0;
+    };
+    
+    Addon.prototype._update = function() {
+        this._offsetIndex += Math.floor(this._offsets.length * UPDATE_FRACTION) % this._offsets.length;
+        if(this._offsetIndex >= this._offsets.length) {
+            this._offsetIndex = this._offsets.length - 1;
+        }
+        this._eventEmitter.emit('renderRequest');
+    };
+    
+    Addon.prototype.enableUpdateTimer = function enableUpdateTimer() {
+        var scope = this;
+        if(!this._updateTimer) {
+            this._updateTimer = setInterval(function() {
+                scope._update.call(scope)
+            }, UPDATE_INTERVAL);
+        }
+    };
+    
+    Addon.prototype.disableUpdateTimer = function disableUpdateTimer() {
+        if(!!this._updateTimer) {
+            clearInterval(this._updateTimer);
+            this._updateTimer = null;
+        }
     };
     
     Addon.getTileSize = function getTileSize() {
@@ -110,6 +148,18 @@ define([
                     return image;
                 })(),
             },
+            "offsets": [
+                {"x": -8, "y": -1},
+                {"x": -7, "y": -2},
+                {"x": -6, "y": -3},
+                {"x": -5, "y": -4},
+                {"x": -4, "y": -5},
+                {"x": -3, "y": -4},
+                {"x": -2, "y": -3},
+                {"x": -1, "y": -2},
+                {"x": 0, "y": -1},
+                {"x": 1, "y": 0}
+            ],
             "render": function(context, loc, subTypeId) {
                 context.drawImage(this._images[subTypeId], loc.x + 4, loc.y + (tileHeight - 16 - 8));
             }
@@ -122,6 +172,7 @@ define([
                     return image;
                 })()
             },
+            "offsets": [{"x": 0, "y": 0}],
             "render": function(context, loc) {
                 context.drawImage(this._images.telepod, loc.x + 2, loc.y + (tileHeight - 16 - 16));
             }
@@ -134,6 +185,7 @@ define([
                     return image;
                 })()
             },
+            "offsets": [{"x": 0, "y": 0}],
             "render": function(context, loc) {
                 context.drawImage(this._images.can, loc.x + 4, loc.y + (tileHeight - 16 - 12));
             }
@@ -146,12 +198,15 @@ define([
                     return image;
                 })()
             },
+            "offsets": [{"x": 0, "y": 0}],
             "render": function(context, loc) {
                 context.drawImage(this._images.door, loc.x, loc.y);
             }
         }
     };
-
+    
+    Addon.updateInterval = OUTER_INTERVAL;
+  
     
     return Addon;
 });

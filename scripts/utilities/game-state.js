@@ -118,9 +118,9 @@ define([
         var scope = this;
         if(!this._interval) {   
             this._interval = setInterval(function() {
-                scope.decrementTime.call(scope, 500)
+                scope.decrementTime.call(scope, Addon.updateInterval);
                 scope._intervalLogic.call(scope);
-            }, 500 / TIME_SCALE_FACTOR);
+            }, Addon.updateInterval / TIME_SCALE_FACTOR);
         }
     };
     
@@ -156,6 +156,9 @@ define([
             else {
                 this._paused = false;
                 this._enableTimer();
+                forEach(this._activeMarbles, function(marble) {
+                    marble.enableUpdateTimer();
+                });
             }
         }
     };
@@ -170,6 +173,9 @@ define([
             AudioManager.pauseBackgroundMusic();
             this._disableTimer();
             this._paused = true;
+            forEach(this._activeMarbles, function(marble) {
+                marble.disableUpdateTimer();
+            });
         }
     };
     
@@ -499,6 +505,7 @@ define([
         var position, door, tile, addons;
         var board = this._board;
         var context = this._context;
+        var eventEmitter = this._eventEmitter;
         var numNeutrinoCans = player.getNumNeutrinoCans();
         var doorTypeId = Addon.typeIds.DOOR;
         if(!(this._numActiveDoors < MAX_ACTIVE_DOORS && // Must have fewer than max number of allowed doors
@@ -517,7 +524,7 @@ define([
         }
         while(addons.length > 0 || tile.getType() != GameTile.typeIds.FLOOR);
         
-        door = new Addon(context, position.x, position.y, doorTypeId);
+        door = new Addon(context, eventEmitter, position.x, position.y, doorTypeId);
         tile.addAddon(door);
         ++(this._numActiveDoors);
         return true;
@@ -545,6 +552,7 @@ define([
     GameState.prototype._createNeutrinoCanIfPossible = function _createNeutrinoCanIfPossible() {
         var position, neutrinoCan, tile, addons;
         var context = this._context;
+        var eventEmitter = this._eventEmitter;
         var board = this._board;
         var neutrinoCanTypeId = Addon.typeIds.NEUTRINO_CAN;
         var neutrinoCanProbability = 1 - (1.1 * this._remainingTime / this._duration);
@@ -557,7 +565,7 @@ define([
             }
             while(addons.length > 0 || tile.getType() != GameTile.typeIds.FLOOR);
             
-            neutrinoCan = new Addon(context, position.x, position.y, neutrinoCanTypeId);
+            neutrinoCan = new Addon(context, eventEmitter, position.x, position.y, neutrinoCanTypeId);
             tile.addAddon(neutrinoCan);
             ++(this._numTotalNeutrinoCans);
             return true;
@@ -569,6 +577,8 @@ define([
         var marbleType, marbleRandomValue, marble, postion, tile;
         var level = this._level;
         var board = this._board;
+        var context = this._context;
+        var eventEmitter = this._eventEmitter;
         var activeMarbles = this._activeMarbles;
         var marbleProbability = this._level.marbleProbability;    
         var marbleTypeCumulativeProbability = level.marbleTypeCumulativeProbability;
@@ -592,7 +602,7 @@ define([
             position = board.getRandomPosition();
             position.x = 0;
             tile = board.getTile(position.x, position.y);
-            marble = new Addon(this._context, position.x, position.y, Addon.typeIds.MARBLE, marbleType);
+            marble = new Addon(context, eventEmitter, position.x, position.y, Addon.typeIds.MARBLE, marbleType);
             activeMarbles.push(marble);
             tile.addAddon(marble);
         }
@@ -605,7 +615,8 @@ define([
         var tile = board.getTile(position.x, position.y);
         tile.removeAddon(marble);
         remove(activeMarbles, marble);
-        delete marble;
+        marble.destruct();
+        marble = undefined;
     };
     
     GameState.prototype._updateMarbles = function _updateMarbles() {
@@ -630,6 +641,8 @@ define([
                         scope._handleMarble(player, tile, marble);
                     }
                 });
+                // To do: This audio sounds AWFUL. Why is it so bad?
+//                 AudioManager.playSound(AudioManager.soundNames.MARBLE);
             }
             else {
                 // Marble is at far right of screen
@@ -1093,10 +1106,11 @@ define([
     
     GameState.prototype._createTelepod = function _createTelepod(position) {
         var context = this._context;
+        var eventEmitter = this._eventEmitter;
         var col = position.x;
         var row = position.y;
         var typeId = Addon.typeIds.TELEPOD;
-        var telepod = new Addon(context, col, row, typeId);
+        var telepod = new Addon(context, eventEmitter, col, row, typeId);
         var tile = this._board.getTile(col, row);
         var addons = tile.getAddons();
         var shouldAdd = true;
