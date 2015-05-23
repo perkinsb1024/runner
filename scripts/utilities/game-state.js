@@ -461,7 +461,7 @@ define([
             return ladders;
         };
         
-        if(player) {
+        if(player && !this._paused) {
             position = player.getPosition();
             offset = player.getOffset();
             currentAction = player.getCurrentAction();
