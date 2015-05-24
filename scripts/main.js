@@ -36,7 +36,9 @@ require([
     var $activeArea = $('.window div:not(.menuBar)')
     var $inactiveArea = $('html,.menuBar')
     var $window = $('.window');
+    var $windowContent = $('.windowContent');
     var $gameContainer = $('.gameContainer');
+    var $backToGame = $('.backToGame');
     var $canvas = $('#runner');
     var $gameStats = $('.stats');
     var $progressFill = $('.progressBar .fill');
@@ -46,10 +48,27 @@ require([
     var eventEmitter = new EventEmitter2();
     var levels = [level1, level2, level3];
     
+    var attemptRestart = function attemptRestart() {
+        game.pause();
+        $window.addClass('inactive');
+        if(confirm("Are you sure you want to completely restart?")) {
+            document.location.reload();
+        }
+    };
+    
+    var showWindow = function showWindow(className) {
+        $windowContent.addClass('hidden');
+        $windowContent.filter('.' + className).removeClass('hidden');
+    };
+    
     var processMenuItem = function processMenuItem($target, $menuItem) {
         var checked;
         var menuItem = $target.data('menu-item');
         switch(menuItem) {
+            case 'restart':
+                attemptRestart();
+                $menuItem.blur();
+                break;
             case 'sound':
                 $target.toggleClass('checked');
                 if($target.hasClass('checked')) {
@@ -67,6 +86,14 @@ require([
                 else {
                     AudioManager.disableBackgroundMusic();
                 }
+                break;
+            case 'about':
+                showWindow('about');
+                $menuItem.blur();
+                break;
+            case 'instructions':
+                showWindow('instructions');
+                $menuItem.blur();
                 break;
             default:
                 $menuItem.blur();
@@ -89,7 +116,7 @@ require([
                 }
                 /*
                 // To do: Disable menu after clicking again
-                // This solution sort of works, but is a little glithy
+                // This solution sort of works, but is a little glitchy
                 if($activeMenu) {
                     $activeMenu.blur();
                     $activeMenu = null;
@@ -100,7 +127,9 @@ require([
                 */
             }
             else {
-                game.resume();
+                if(!$gameContainer.hasClass('hidden')) {
+                    game.resume();
+                }
             }
         }
         else {
@@ -124,7 +153,7 @@ require([
         $extraLives: $extraLives,
         $telepods: $telepods,
         eventEmitter: eventEmitter,
-        paused: false,
+        paused: true,
         duration: 100 * 1000,
         levels: levels,
         currentLevel: 0,
@@ -171,6 +200,10 @@ require([
     
     game.updateTelepods(STARTING_TELEPODS);
     game.updateExtraLives(STARTING_EXTRA_LIVES);
+    
+    $backToGame.on('click', function(event) {
+        showWindow('gameContainer');
+    });
     
     eventEmitter.on('renderRequest', function() {
         game.render();

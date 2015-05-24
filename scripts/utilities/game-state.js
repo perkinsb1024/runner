@@ -179,6 +179,10 @@ define([
         }
     };
     
+    GameState.prototype.isPaused = function isPaused() {
+        return this._paused;
+    };
+    
     GameState.prototype.updateTelepods = function updateTelepod(numTelepods) {
         this._$telepods.html('');
         for(var i = 0; i < numTelepods; i++) {
@@ -293,6 +297,7 @@ define([
         var cols = this._cols;
         var rows = this._rows;
         var duration = this._duration;
+        var alreadyPaused = this._paused;
                 
         // Make sure the game is paused
         this.pause();
@@ -344,10 +349,12 @@ define([
         // Load the level splash image
         this._loadSplashImage(level.splashImage);
         
-        this._preLevelTimer = setTimeout(function() {
-            // Remove splash screen and begin level
-            scope._startLevel();
-        }, SPLASH_DELAY);
+        if(!alreadyPaused) {
+            this._preLevelTimer = setTimeout(function() {
+                // Remove splash screen and begin level
+                scope._startLevel();
+            }, SPLASH_DELAY);
+        }
     };
     
     GameState.prototype._loadSplashImage = function _loadSplashImage(splashImage) {
