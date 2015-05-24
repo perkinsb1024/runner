@@ -108,10 +108,10 @@ define([
         eventEmitter.on('aiInfoRequest', function(event) {
             scope._getAiInfo.call(scope, event);
         });
-                
+        
         this._loadLevel(level);
         // To do: eventEmitter doesn't get aiInfoRequest until the second call to loadLevel. Fix that
-        this._loadLevel(level);
+        this._loadLevel(level, paused);
     }
     
     GameState.prototype._enableTimer = function _enableTimer() {
@@ -288,7 +288,7 @@ define([
         this._players[player.getId()] = player;
     };
     
-    GameState.prototype._loadLevel= function _loadLevel(level) {
+    GameState.prototype._loadLevel = function _loadLevel(level, paused) {
         var scope = this;
         var players = this._players;
         var activeMarbles = this._activeMarbles;
@@ -297,7 +297,7 @@ define([
         var cols = this._cols;
         var rows = this._rows;
         var duration = this._duration;
-        var alreadyPaused = this._paused;
+        var alreadyPaused = (paused === undefined) ? this._paused : paused;
                 
         // Make sure the game is paused
         this.pause();
