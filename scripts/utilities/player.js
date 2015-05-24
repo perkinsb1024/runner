@@ -415,7 +415,6 @@ define([
     };
     
     Player.prototype.die = function die() {
-        console.log(this._name + " died!");
         this.setIsAlive(false);
         var moveDetails = {
             player: this._id,

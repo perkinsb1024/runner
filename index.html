@@ -23,6 +23,8 @@
                         File
                         <div class="menu">
                             <ul>
+                                <li data-menu-item="save">Save Game</li>
+                                <li data-menu-item="load">Load Game</li>
                                 <li data-menu-item="restart">Restart</li>
                             </ul>
                         </div>
@@ -110,6 +112,11 @@
                     <li>
                         Use the arrow keys to control your player. Pressing the space bar will cause him to jump and pressing shift will deploy a telepod.
                     </li>
+            </div>
+            <div class="windowContent savedGames hidden">
+                <input type="button" class="backToGame" value="Back" />
+                <h1>Saved games</h1>
+                <ul class="gameList"></ul>
             </div>
         </div>
     </body>

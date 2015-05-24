@@ -60,18 +60,18 @@ body {
     background-color: #ECE9D8;
 }
 
-.window ul {
+.menuBar ul {
     margin: 0;
     padding: 0;
 }
 
-.window li {
+.menuBar li {
     position: relative;
     display: inline-block;
     padding: 0 5px;
 }
 
-.window li:focus {
+.menuBar li:focus {
     background-color: #316AC5;
     color: #FFF;
     outline: none;
@@ -205,7 +205,7 @@ body {
     background-image: url('../images/src/runner_logo.png');
 }
 
-.about, .instructions {
+.about, .instructions, .savedGames {
     box-sizing: border-box;
     width: 642px;
     height: 385px;
@@ -218,6 +218,11 @@ body {
     margin-bottom: 5px;
     text-align: center;
     font-size: 20px;
+}
+
+.windowContent ul {
+    padding-left: 0;
+    list-style: none;
 }
 
 .windowContent li {

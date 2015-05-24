@@ -265,6 +265,10 @@ define([
         }
     };
     
+    GameState.prototype.getLevel = function getLevel() {
+        return this._currentLevel;
+    };
+    
     GameState.prototype.endGame = function endGame() { 
         var image = this._gameOverImage;       
         this._gameOver = true;
@@ -286,6 +290,55 @@ define([
         var player = new Player(opts);
         this._players[player.getId()] = player;
     };
+    
+    /**
+     * Returns necessary information about human player for saving the game
+     */
+    GameState.prototype.getHumanPlayerState = function getHumanPlayerState() {
+        // Note: This will not work for multiple human players
+        var playerState;
+        var players = this._players;
+        forOwn(players, function(player) {
+            if(player.getType() === Player.types.HUMAN) {
+                playerState = {
+                    name: player.getName(),
+                    numExtraLives: player.getNumExtraLives()
+                };
+                return false; // Break out of loop
+            };
+        });
+        return playerState;
+    };
+    
+    GameState.prototype.destruct = function destruct() {
+        // Unregister all timers
+        var tile;
+        var board = this._board;
+        var players = this._players;
+        var cols = this._cols;
+        var rows = this._rows;
+        
+        this._gameOver = true;
+                
+        // Destroy all addons, as they might have timers
+        for(var row = 0; row < rows; row++) {
+            for(var col = 0; col < cols; col++) {
+                tile = board.getTile(col, row);
+                forEach(tile.getAddons(), function(addon) {
+                    addon.destruct();
+                });
+            }
+        }
+        
+        // Destroy all players
+        forOwn(players, function(player) {
+            player.destruct();
+            remove(players, player);
+        });
+        
+        // Disbale game timer
+        this._disableTimer();
+    }
     
     GameState.prototype._loadLevel = function _loadLevel(level, paused) {
         var scope = this;

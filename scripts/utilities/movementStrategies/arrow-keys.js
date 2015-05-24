@@ -38,6 +38,11 @@ define([
         };
         this._validKeys = union.apply(this, values(this._keyCodes));
         
+        // _currentlyPressed is used (and can be modified) by MovementStrategy logic
+        this._currentlyPressed = [];
+        // _ignore is ONLY used to prevent key repeats
+        this._ignore = [];
+        
         this.stand = function stand() {
             callbacks.stand && callbacks.stand.call(this);
         };
@@ -120,11 +125,6 @@ define([
         }, keyCheck);
     };
     
-    // _currentlyPressed is used (and can be modified) by MovementStrategy logic
-    ArrowKeysMovementStrategy.prototype._currentlyPressed = [];
-    // _ignore is ONLY used to prevent key repeats
-    ArrowKeysMovementStrategy.prototype._ignore = [];
-    
     ArrowKeysMovementStrategy.prototype._fakeKeyEvent = function fakeKeyEvent(keyCode) {
         // keyCode is the only property currently used, but others can be added as needed
         return {
@@ -159,7 +159,7 @@ define([
                 
         if(intersection(currentlyPressed, keyCodes.left).length) {
             if(intersection(currentlyPressed, keyCodes.jump).length) {
-                // Remove any `jump` keys from `currentlyPressed`
+                // Remove any `jump` keys from `currentlyPressed` to make that key not repeat
                 this._currentlyPressed = currentlyPressed = difference(currentlyPressed, keyCodes.jump);
                 scope.jump();
             }
@@ -169,7 +169,7 @@ define([
         }
         else if(intersection(currentlyPressed, keyCodes.right).length) {
             if(intersection(currentlyPressed, keyCodes.jump).length) {
-                // Remove any `jump` keys from `currentlyPressed`
+                // Remove any `jump` keys from `currentlyPressed` to make that key not repeat
                 this._currentlyPressed = currentlyPressed = difference(currentlyPressed, keyCodes.jump);
                 scope.jump();
             }
@@ -188,6 +188,8 @@ define([
         }
         
         if(intersection(currentlyPressed, keyCodes.drop).length) {
+            // Remove any `drop` keys from `currentlyPressed` to make that key not repeat
+            this._currentlyPressed = currentlyPressed = difference(currentlyPressed, keyCodes.drop);
             scope.drop();
         }
     };
