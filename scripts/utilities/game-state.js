@@ -753,12 +753,15 @@ define([
 
         if(player.getType() === Player.types.HUMAN) {
             ++numPlayerNeutrinoCans;
-            tile.removeAddon(neutrinoCan);
-            neutrinoCan = null;
             player.setNumNeutrinoCans(numPlayerNeutrinoCans);
-            AudioManager.playSound(AudioManager.soundNames.CAN);
             this._createDoorIfPossible(player);
         }
+        else {
+            --this._numTotalNeutrinoCans;
+        }
+        tile.removeAddon(neutrinoCan);
+        neutrinoCan = null;
+        AudioManager.playSound(AudioManager.soundNames.CAN);
         return false;
     };
     
