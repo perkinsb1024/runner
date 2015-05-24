@@ -41,6 +41,8 @@ require([
     var $windowContent = $('.windowContent');
     var $gameContainer = $('.gameContainer');
     var $backToGame = $('.backToGame');
+    var $musicMenuItem = $('.menu .music');
+    var $effectsMenuItem = $('.menu .effects');
     var $canvas = $('#runner');
     var $gameStats = $('.stats');
     var $savedGameList = $('.savedGames .gameList');
@@ -140,6 +142,53 @@ require([
         }
         else {
             localStorage.setItem('savedGames', JSON.stringify(games));
+        }
+    };
+    
+    var readMutePreferencesFromLocalStorage = function readMutePreferencesFromLocalStorage() {
+        var mutePreferences;
+        if(!localStorage) {
+            return false;
+        } 
+        else {
+            try {
+                mutePreferences = JSON.parse(localStorage.getItem('mute'));
+            }
+            catch(error) {
+                mutePreferences = null;
+            }
+        }
+        return mutePreferences || {};
+    };
+    
+    var writeMutePreferencesToLocalStorage = function writeMutePreferencesToLocalStorage(mutePreferences) {
+        if(!localStorage) {
+            return false;
+        }
+        else {
+            localStorage.setItem('mute', JSON.stringify(mutePreferences));
+        }
+    };
+    
+    var storeMutePreference = function storeMutePreference(type, isMuted) {
+        var mutePreferences = readMutePreferencesFromLocalStorage();
+        if(!!mutePreferences) {
+            mutePreferences[type] = isMuted;
+        }
+        writeMutePreferencesToLocalStorage(mutePreferences);
+    };
+    
+    var loadMutePreferences = function loadMutePreferences() {
+        var mutePreferences = readMutePreferencesFromLocalStorage();
+        if(!!mutePreferences) {
+            if(mutePreferences.music) {
+                AudioManager.disableBackgroundMusic();
+                $musicMenuItem.removeClass('checked');
+            }
+            if(mutePreferences.effects) {
+                AudioManager.disableSoundEffects();
+                $effectsMenuItem.removeClass('checked');
+            }
         }
     };
     
@@ -250,18 +299,22 @@ require([
             case 'sound':
                 $target.toggleClass('checked');
                 if($target.hasClass('checked')) {
+                    storeMutePreference('effects', false);
                     AudioManager.enableSoundEffects();
                 }
                 else {
+                    storeMutePreference('effects', true);
                     AudioManager.disableSoundEffects();
                 }
                 break;
             case 'music':
                 $target.toggleClass('checked');
                 if($target.hasClass('checked')) {
+                    storeMutePreference('music', false);
                     AudioManager.enableBackgroundMusic();
                 }
                 else {
+                    storeMutePreference('music', true);
                     AudioManager.disableBackgroundMusic();
                 }
                 break;
@@ -333,6 +386,8 @@ require([
     
     // This is where the magic happens. Actually create the game
     game = createGame(game);
+    // Load effects/music settings from last local storage
+    loadMutePreferences();
     
     if(DEBUG) {
         window.game = game;

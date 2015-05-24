@@ -30,7 +30,6 @@ define([
     var tileHeight = tileSize.height;
     
     var TIME_SCALE_FACTOR = 1;
-    var AUTO_PLAY_MUSIC = true;
     var RELOAD_LEVEL_DELAY = 1000;
     var SPLASH_DELAY = 2500;
     var MAX_TOTAL_NEUTRINO_CANS = 1;
@@ -94,9 +93,6 @@ define([
         this._gameOverImage.src = ('images/src/game_over.png');
         this._timeExpiredImage = new Image();
         this._timeExpiredImage.src = ('images/src/time_expired.png');
-        if(!AUTO_PLAY_MUSIC) {
-            AudioManager.disableBackgroundMusic();
-        }
         
         canvas.width = cols * tileWidth;
         canvas.height = rows * tileHeight;
