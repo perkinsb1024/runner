@@ -153,7 +153,7 @@ require([
         $extraLives: $extraLives,
         $telepods: $telepods,
         eventEmitter: eventEmitter,
-        paused: true,
+        paused: false,
         duration: 100 * 1000,
         levels: levels,
         currentLevel: 0,
