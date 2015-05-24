@@ -27,7 +27,7 @@ require([
     level2,
     level3
 ) {
-    var DEBUG = false;
+    var DEBUG = true;
     var STARTING_TELEPODS = 0;
     var STARTING_EXTRA_LIVES = 2;
     
