@@ -58,7 +58,6 @@ define([
         var levels = opts.levels;// || throw new Error("No `level` provided!");
         var currentLevel = opts.currentLevel || 0;
         var level = levels[currentLevel];
-        var paused = opts.paused || false;
         var size = opts.size;// || throw new Error("No `size` provided!");
         var cols = size.cols || 40; // || throw new Error("Size had no `cols` property!");
         var rows = size.rows || 8; // || throw new Error("Size had no `rows` property!");
@@ -81,7 +80,7 @@ define([
         this._currentLevel = currentLevel;
         this._preLevel = undefined;
         this._preLevelTimer = undefined;
-        this._paused = paused;
+        this._paused = false;
         this._gameOver = false;
         this._players = players;
         this._duration = duration;
@@ -111,7 +110,7 @@ define([
         
         this._loadLevel(level);
         // To do: eventEmitter doesn't get aiInfoRequest until the second call to loadLevel. Fix that
-        this._loadLevel(level, paused);
+        this._loadLevel(level);
     }
     
     GameState.prototype._enableTimer = function _enableTimer() {
@@ -297,7 +296,6 @@ define([
         var cols = this._cols;
         var rows = this._rows;
         var duration = this._duration;
-        var alreadyPaused = (paused === undefined) ? this._paused : paused;
                 
         // Make sure the game is paused
         this.pause();
@@ -349,12 +347,10 @@ define([
         // Load the level splash image
         this._loadSplashImage(level.splashImage);
         
-        if(!alreadyPaused) {
-            this._preLevelTimer = setTimeout(function() {
-                // Remove splash screen and begin level
-                scope._startLevel();
-            }, SPLASH_DELAY);
-        }
+        this._preLevelTimer = setTimeout(function() {
+            // Remove splash screen and begin level
+            scope._startLevel();
+        }, SPLASH_DELAY);
     };
     
     GameState.prototype._loadSplashImage = function _loadSplashImage(splashImage) {
