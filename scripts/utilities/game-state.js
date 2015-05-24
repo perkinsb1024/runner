@@ -29,17 +29,26 @@ define([
     var tileWidth = tileSize.width;
     var tileHeight = tileSize.height;
     
+    // For debugging, how fast should the timer count down
     var TIME_SCALE_FACTOR = 1;
+    // How long between dying and showing the splash screen
     var RELOAD_LEVEL_DELAY = 1000;
+    // How long to wait on the splash screen
     var SPLASH_DELAY = 2500;
+    // Maximum number of certain elements
     var MAX_TOTAL_NEUTRINO_CANS = 1;
     var MAX_ACTIVE_DOORS = 1;
     var MAX_ACTIVE_TELEPODS = 1;
     var MAX_ACTIVE_MARBLES = 1;
     var MAX_TELEPODS = 5;
+    // Probability of getting a telepod when flipping a switch (decays every time you get one)
     var DEFAULT_TELEPOD_PROBABILITY = 0.96;
     var TELEPOD_PROBABILITY_DECAY = 1.6;
-    var LADDER_OFFSET = 0.5; // Fraction of ladder per climb
+    // How long to wait before a new neutrino can is allowed after opponent grabs one
+    var MIN_NEUTRINO_CAN_BACKOFF = 10000;
+    var MAX_NEUTRINO_CAN_BACKOFF = 25000;
+    // Fraction of ladder per climb
+    var LADDER_OFFSET = 0.5;
        
     /**
      * Creates a new GameState
@@ -89,6 +98,8 @@ define([
         this._numTotalNeutrinoCans = 0;
         this._numActiveDoors = 0;
         this._activeMarbles = [];
+        // mS until a neutrino can is allowed to appear (used after opponenet picks one up)
+        this._neutrinoCanBackoff = 0; 
         this._gameOverImage = new Image();
         this._gameOverImage.src = ('images/src/game_over.png');
         this._timeExpiredImage = new Image();
@@ -609,7 +620,10 @@ define([
         var neutrinoCanTypeId = Addon.typeIds.NEUTRINO_CAN;
         var neutrinoCanProbability = 1 - (1.1 * this._remainingTime / this._duration);
         // Create neutrino can if we haven't reached max and if probability allows it
-        if(this._numTotalNeutrinoCans < MAX_TOTAL_NEUTRINO_CANS && neutrinoCanProbability > Math.random()) {
+        if(this._numTotalNeutrinoCans < MAX_TOTAL_NEUTRINO_CANS &&
+            this._neutrinoCanBackoff <= 0 &&
+            neutrinoCanProbability > Math.random())
+        {
             do {
                 position = board.getRandomPosition();
                 tile = board.getTile(position.x, position.y);
@@ -758,6 +772,8 @@ define([
         }
         else {
             --this._numTotalNeutrinoCans;
+            // Between min and max mS, but no more than half of the reamining time
+            this._neutrinoCanBackoff = (MIN_NEUTRINO_CAN_BACKOFF + Math.random() * (MAX_NEUTRINO_CAN_BACKOFF - MIN_NEUTRINO_CAN_BACKOFF)) % (this._remainingTime / 2);
         }
         tile.removeAddon(neutrinoCan);
         neutrinoCan = null;
@@ -1183,6 +1199,12 @@ define([
     };
     
     GameState.prototype._intervalLogic = function _intervalLogic() {
+        if(this._neutrinoCanBackoff > 0) {
+           this._neutrinoCanBackoff -= Addon.updateInterval;
+        }
+        else {
+            this._neutrinoCanBackoff = 0;
+        }
         this._updateMarbles();
         this._createNeutrinoCanIfPossible();
         this._createMarbleIfPossible();

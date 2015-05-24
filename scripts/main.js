@@ -412,8 +412,4 @@ require([
     $backToGame.on('click', function(event) {
         showWindow('gameContainer');
     });
-    
-    setTimeout(function() {
-        game.render();
-    }, 250);
 });
