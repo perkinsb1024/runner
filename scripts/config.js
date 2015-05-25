@@ -1,4 +1,4 @@
-var prod = false;
+var prod = true;
 var map = {};
 var paths;
 var urlArgs;
