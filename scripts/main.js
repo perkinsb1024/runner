@@ -38,6 +38,7 @@ require([
     var $activeArea = $('.window div:not(.menuBar)')
     var $inactiveArea = $('html,.menuBar')
     var $window = $('.window');
+    var $titleBarText = $('.titleBar .text');
     var $windowContent = $('.windowContent');
     var $gameContainer = $('.gameContainer');
     var $backToGame = $('.backToGame');
@@ -59,6 +60,7 @@ require([
         var eventEmitter = (opts && opts.eventEmitter) || new EventEmitter2();
         var defaultOpts = {
             canvas: canvas,
+            $titleBarText: $titleBarText,
             $gameStats: $gameStats,
             $progressBar: $progressFill,
             $extraLives: $extraLives,
