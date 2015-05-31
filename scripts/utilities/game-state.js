@@ -58,6 +58,7 @@ define([
     var GameState = function(opts) {
         var scope = this;
         var canvas = opts.canvas;// || throw new Error("No `canvas` provided!");
+        var $titleBarText = opts.$titleBarText;// || throw new Error("No `$titleBarText` provided!");
         var $gameStats = opts.$gameStats;// || throw new Error("No `$gameStats` provided!");
         var $progressBar = opts.$progressBar;
         var $extraLives = opts.$extraLives;
@@ -76,6 +77,7 @@ define([
         context = canvas.getContext('2d');
         
         this._canvas = canvas;
+        this._$titleBarText = $titleBarText;
         this._$gameStats = $gameStats;
         this._$progressBar = $progressBar;
         this._$extraLives = $extraLives;
@@ -356,6 +358,9 @@ define([
         var cols = this._cols;
         var rows = this._rows;
         var duration = this._duration;
+        
+        // Set the game title
+        this._$titleBarText.text("Runner - Level " + level.level);
                 
         // Make sure the game is paused
         this.pause();
