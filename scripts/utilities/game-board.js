@@ -15,7 +15,6 @@ define([
     
     /**
      * Validate a level object
-     * todo: finish this JSDoc
      */
     var validateLevel = function(level, size) {
         return validateMap(level.map, size) && !!level.background && !!level.music;
@@ -23,7 +22,6 @@ define([
     
     /**
      * Validate a map object
-     * todo: finish this JSDoc
      */
     var validateMap = function(map, size) {
         return map.length === size;
@@ -32,7 +30,6 @@ define([
     /**
      * Create a new GameBoard
      * @class
-     * todo: finish this JSDoc
      */
     var GameBoard = function GameBoard(context, level, cols, rows) {
         var scope = this;
@@ -54,7 +51,6 @@ define([
         forEach(level.map, function(type, index) {
             var col = index % cols;
             var row = (index - col) / cols;
-            // Todo: Shouldn't need col, row - see comment in game-tile.js :: GameTile()
             var tile = new GameTile(context, col, row, type, level.floorTypeId);
             scope._board[index] = tile;
         });
@@ -62,7 +58,6 @@ define([
     
     /**
      * Prints GameBoard type string
-     * todo: finish this JSDoc
      */
     GameBoard.prototype.toString = function() { return "[GameBoard object]"; };
     GameBoard.prototype.getTile = function getTile(col, row) {
