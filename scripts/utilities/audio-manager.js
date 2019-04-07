@@ -2,9 +2,7 @@ define([
 
 ], function (
 
-) {
-    // todo: Integrate background music in here as well
-    
+) {    
     /* Utility functions */
     var newAudio = function newAudio(path) {
         var audio = new Audio();
@@ -17,7 +15,6 @@ define([
     
     var AudioManager = {};
     
-    // To do: Put background music in here
     AudioManager._isEnabled = {
         backgroundMusic: true,
         soundEffects: true

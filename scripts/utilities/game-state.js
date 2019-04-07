@@ -53,7 +53,6 @@ define([
     /**
      * Creates a new GameState
      * @class
-     * todo: finish this JSDoc
      */
     var GameState = function(opts) {
         var scope = this;

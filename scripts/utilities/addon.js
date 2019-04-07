@@ -17,8 +17,6 @@ define([
     var imageDir = 'images/src/';
     
     var Addon = function Addon(context, eventEmitter, col, row, typeId, subTypeId) {
-        // These shoudln't take col, row - They should not be aware of the game board. Just draw and return themself
-            // Figure out how to return a canvas-drawable section like that
         this._context = context;
         this._eventEmitter = eventEmitter;
         this._col = col;

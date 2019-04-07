@@ -50,6 +50,7 @@ require([
     var $progressFill = $('.progressBar .fill');
     var $extraLives = $('.extraLives');
     var $telepods = $('.telepods');
+    var $autoplayEnable = $('.autoplay-enable')
     var canvas = $canvas[0];
     var levels = [level1, level2, level3];
     
@@ -414,4 +415,12 @@ require([
     $backToGame.on('click', function(event) {
         showWindow('gameContainer');
     });
+    $autoplayEnable.on('click', function(event) {
+        // First make sure background music is enabled
+        AudioManager.enableBackgroundMusic();
+        // Now play it, since this is a result of a click event, the browser will allow it
+        AudioManager.playBackgroundMusic();
+        // Finally pause, since removing focus from the game pauses the game. Music will resume with game
+        AudioManager.pauseBackgroundMusic();
+    })
 });
