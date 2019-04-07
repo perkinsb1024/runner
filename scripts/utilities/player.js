@@ -284,7 +284,6 @@ define([
     /**
      * Creates new Player
      * @class
-     * todo: finish this JSDoc
      */
     var Player = function(opts) {
         var playerName;
@@ -513,7 +512,6 @@ define([
     
     /**
      * Renders the player
-     * todo: finish this JSDoc
      */
     Player.prototype.render = function(context) {
         var offsetY = 6 - Math.round(this._offset.y * (tileHeight - 16));

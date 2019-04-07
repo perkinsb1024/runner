@@ -240,3 +240,8 @@ body {
 .hidden {
     display: none;
 }
+
+.autoplay-message {
+    font-size: 11px;
+}
+
